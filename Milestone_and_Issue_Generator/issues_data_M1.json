@@ -5,7 +5,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Establish SDL3 initialization, create a 1920x1080 window + renderer, and implement a basic main loop.\n\n**Acceptance Criteria** 【15†source】\n- [ ] SDL3 initializes and shuts down cleanly\n- [ ] Window (1920x1080) and renderer created\n- [ ] Main loop clears to blue, prepares scene, and renders a frame\n- [ ] No hard-coded platform-specific paths\n\n**References**: Milestone 1 core graphics setup 【15†source】\n"
+    "body": "Establish SDL3 initialization, create a 1920x1080 window + renderer, and implement a basic main loop.\n\n**Acceptance Criteria** \n- [ ] SDL3 initializes and shuts down cleanly\n- [ ] Window (1920x1080) and renderer created\n- [ ] Main loop clears to blue, prepares scene, and renders a frame\n- [ ] No hard-coded platform-specific paths\n"
   },
   {
     "title": "[Engine] Generic Entity System",
@@ -13,7 +13,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Implement a general entity/game-object system with position and renderable state.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Entity/component representation supports position and texture/shape\n- [ ] System can update and draw arbitrary entities\n- [ ] Rendering is engine-agnostic with clear interfaces\n\n**References**: Milestone 1 entity system 【15†source】\n"
+    "body": "Implement a general entity/game-object system with position and renderable state.\n\n**Acceptance Criteria** \n- [ ] Entity/component representation supports position and texture/shape\n- [ ] System can update and draw arbitrary entities\n- [ ] Rendering is engine-agnostic with clear interfaces\n"
   },
   {
     "title": "[Engine] Physics System (Configurable Gravity)",
@@ -21,7 +21,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Build a physics subsystem supporting gravity with configurable strength.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Gravity applies a constant downward acceleration\n- [ ] Gravity is configurable (e.g., `Physics.setGravity(float)`), not hard-coded\n- [ ] Physics integrates with entity update loop\n\n**References**: Milestone 1 physics system 【15†source】\n"
+    "body": "Build a physics subsystem supporting gravity with configurable strength.\n\n**Acceptance Criteria** \n- [ ] Gravity applies a constant downward acceleration\n- [ ] Gravity is configurable (e.g., `Physics.setGravity(float)`), not hard-coded\n- [ ] Physics integrates with entity update loop\n"
   },
   {
     "title": "[Engine] Input Handling System (Keyboard State)",
@@ -29,7 +29,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Create an input manager that wraps `SDL_GetKeyboardState` and exposes a simple query API.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Input system reads keyboard state continuously (no per-event reliance except window close)\n- [ ] Helper like `Input.isKeyPressed(SDL_SCANCODE_W)` exposed\n- [ ] Clean init/teardown and update cycle\n\n**References**: Milestone 1 input handling 【15†source】\n"
+    "body": "Create an input manager that wraps `SDL_GetKeyboardState` and exposes a simple query API.\n\n**Acceptance Criteria** \n- [ ] Input system reads keyboard state continuously (no per-event reliance except window close)\n- [ ] Helper like `Input.isKeyPressed(SDL_SCANCODE_W)` exposed\n- [ ] Clean init/teardown and update cycle\n"
   },
   {
     "title": "[Engine] Collision Detection System (AABB)",
@@ -37,7 +37,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Provide a generic collision function using axis-aligned bounding boxes.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Detect overlap between two entities (AABB)\n- [ ] `SDL_HasIntersection`-style behavior\n- [ ] Returns boolean and/or contact info usable by game logic\n\n**References**: Milestone 1 collision detection 【15†source】\n"
+    "body": "Provide a generic collision function using axis-aligned bounding boxes.\n\n**Acceptance Criteria** \n- [ ] Detect overlap between two entities (AABB)\n- [ ] `SDL_HasIntersection`-style behavior\n- [ ] Returns boolean and/or contact info usable by game logic\n"
   },
   {
     "title": "[Engine] Scaling System (Toggle: Pixel vs Proportional)",
@@ -45,7 +45,7 @@
       "engine"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Implement rendering-scale modes and a key-bound toggle between constant-size (pixel) and proportional scaling.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Two scale modes implemented (pixel-based, proportional/percentage-based)\n- [ ] Key press toggles mode via input system\n- [ ] Engine renders entities consistently in both modes\n\n**References**: Milestone 1 scaling system 【15†source】\n"
+    "body": "Implement rendering-scale modes and a key-bound toggle between constant-size (pixel) and proportional scaling.\n\n**Acceptance Criteria** \n- [ ] Two scale modes implemented (pixel-based, proportional/percentage-based)\n- [ ] Key press toggles mode via input system\n- [ ] Engine renders entities consistently in both modes\n"
   },
   {
     "title": "[Docs] Team Engine Design Documentation",
@@ -53,7 +53,7 @@
       "docs"
     ],
     "milestone_title": "Milestone 1A – Engine Foundations (Team)",
-    "body": "Provide documentation mapping Milestone 1 tasks to code locations and design decisions.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Architecture overview (modules, responsibilities, data flow)\n- [ ] Where each Milestone 1 task is implemented in the repo\n- [ ] Build instructions (CMake, SDL3 dependencies, platforms)\n\n**References**: Team submission documentation requirement 【15†source】\n"
+    "body": "Provide documentation mapping Milestone 1 tasks to code locations and design decisions.\n\n**Acceptance Criteria** \n- [ ] Architecture overview (modules, responsibilities, data flow)\n- [ ] Where each Milestone 1 task is implemented in the repo\n- [ ] Build instructions (CMake, SDL3 dependencies, platforms)\n"
   },
   {
     "title": "[Game] Engine Startup via main.cpp",
@@ -61,7 +61,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Wire your game entry to initialize and run the team engine loop.\n\n**Acceptance Criteria** 【15†source】\n- [ ] `main.cpp` calls engine init and main loop\n- [ ] Game window opens and renders a frame\n- [ ] Clean shutdown without leaks\n\n**References**: Individual game Task 1 【15†source】\n"
+    "body": "Wire your game entry to initialize and run the team engine loop.\n\n**Acceptance Criteria** \n- [ ] `main.cpp` calls engine init and main loop\n- [ ] Game window opens and renders a frame\n- [ ] Clean shutdown without leaks\n"
   },
   {
     "title": "[Game] Implement Required Entities (Static, Player, Auto-Moving)",
@@ -69,7 +69,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Create the three required entities using the team engine: static, controllable, and auto-moving.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Static object (e.g., wall/platform/tree) present\n- [ ] Controllable object (player) present\n- [ ] Auto-moving object with continuous predefined path\n- [ ] Visuals and movement pattern unique to your game\n\n**References**: Individual game Task 2 【15†source】\n"
+    "body": "Create the three required entities using the team engine: static, controllable, and auto-moving.\n\n**Acceptance Criteria** \n- [ ] Static object (e.g., wall/platform/tree) present\n- [ ] Controllable object (player) present\n- [ ] Auto-moving object with continuous predefined path\n- [ ] Visuals and movement pattern unique to your game\n"
   },
   {
     "title": "[Game] Apply Physics (Choose Entities Affected by Gravity)",
@@ -77,7 +77,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Integrate the engine's physics; select which entities use gravity.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Player uses gravity (unless design dictates otherwise)\n- [ ] Non-gravity examples allowed (e.g., floating enemy)\n- [ ] Physics interacts with collision and movement as expected\n\n**References**: Individual game Task 3 【15†source】\n"
+    "body": "Integrate the engine's physics; select which entities use gravity.\n\n**Acceptance Criteria** \n- [ ] Player uses gravity (unless design dictates otherwise)\n- [ ] Non-gravity examples allowed (e.g., floating enemy)\n- [ ] Physics interacts with collision and movement as expected\n"
   },
   {
     "title": "[Game] Controls (Keyboard → Player Movement)",
@@ -85,7 +85,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Use the input system to map keys (e.g., WASD) to player movement.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Continuous key polling via input manager\n- [ ] Player movement is responsive and frame-rate independent\n- [ ] Code clearly separates input, physics, and rendering\n\n**References**: Individual game Task 4 【15†source】\n"
+    "body": "Use the input system to map keys (e.g., WASD) to player movement.\n\n**Acceptance Criteria**\n- [ ] Continuous key polling via input manager\n- [ ] Player movement is responsive and frame-rate independent\n- [ ] Code clearly separates input, physics, and rendering\n"
   },
   {
     "title": "[Game] Collision Responses",
@@ -93,7 +93,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Define behavior on collisions (e.g., stop player on static object, reset on enemy hit).\n\n**Acceptance Criteria** 【15†source】\n- [ ] Player vs static collision resolved (no interpenetration)\n- [ ] Player vs auto-moving response implemented (e.g., reset position, message)\n- [ ] Clear separation of detection (engine) vs response (game logic)\n\n**References**: Individual game Task 5 【15†source】\n"
+    "body": "Define behavior on collisions (e.g., stop player on static object, reset on enemy hit).\n\n**Acceptance Criteria** \n- [ ] Player vs static collision resolved (no interpenetration)\n- [ ] Player vs auto-moving response implemented (e.g., reset position, message)\n- [ ] Clear separation of detection (engine) vs response (game logic)\n"
   },
   {
     "title": "[Game] Demonstrate Scaling Toggle",
@@ -101,7 +101,7 @@
       "game"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Show the engine's scaling modes in action; bind toggle to a key and verify visuals.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Key-bound toggle switches modes at runtime\n- [ ] Visual confirmation (HUD/text) of current mode recommended\n- [ ] No distortion or layout breakage across modes\n\n**References**: Individual game Task 6 【15†source】\n"
+    "body": "Show the engine's scaling modes in action; bind toggle to a key and verify visuals.\n\n**Acceptance Criteria** \n- [ ] Key-bound toggle switches modes at runtime\n- [ ] Visual confirmation (HUD/text) of current mode recommended\n- [ ] No distortion or layout breakage across modes\n"
   },
   {
     "title": "[Docs] Individual Reflection (1–2 pages)",
@@ -109,7 +109,7 @@
       "docs"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Write and submit your reflection covering contributions, rationale, successes, challenges, and next steps.\n\n**Acceptance Criteria** 【15†source】\n- [ ] 1–2 pages, concise and substantive\n- [ ] Discuss team engine design decisions and your game’s choices\n- [ ] Include evidence (e.g., references to screenshots)\n\n**References**: Individual writeup requirement 【15†source】\n"
+    "body": "Write and submit your reflection covering contributions, rationale, successes, challenges, and next steps.\n\n**Acceptance Criteria** \n- [ ] 1–2 pages, concise and substantive\n- [ ] Discuss team engine design decisions and your game’s choices\n- [ ] Include evidence (e.g., references to screenshots)\n"
   },
   {
     "title": "[Docs] Screenshots Appendix",
@@ -117,6 +117,6 @@
       "docs"
     ],
     "milestone_title": "Milestone 1B – Game Foundations (Individual)",
-    "body": "Capture and organize screenshots demonstrating each required feature.\n\n**Acceptance Criteria** 【15†source】\n- [ ] Images for engine window, entity types, physics, input movement, collisions, scaling\n- [ ] Linked from reflection or README (appendix; not counted toward page limit)\n\n**References**: Appendix requirement 【15†source】\n"
+    "body": "Capture and organize screenshots demonstrating each required feature.\n\n**Acceptance Criteria** \n- [ ] Images for engine window, entity types, physics, input movement, collisions, scaling\n- [ ] Linked from reflection or README (appendix; not counted toward page limit)\n"
   }
 ]
