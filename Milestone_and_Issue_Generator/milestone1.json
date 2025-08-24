@@ -1,0 +1,10 @@
+[
+  {
+    "title": "Milestone 1A – Engine Foundations (Team)",
+    "description": "Core SDL3 setup, entity, physics, input, collision, scaling. Team submission + docs."
+  },
+  {
+    "title": "Milestone 1B – Game Foundations (Individual)",
+    "description": "Individual game using team engine: entities, physics, input, collisions, scaling. Reflection + screenshots."
+  }
+]
