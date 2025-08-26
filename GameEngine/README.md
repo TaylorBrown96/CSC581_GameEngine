@@ -1,15 +1,11 @@
 # GameEngine – Skelly Idle Demo
 
-A simple SDL3 project that animates a sprite sheet.
-
----
-
 ## Setup
 
 1. **Download this repo**
 
    ```bash
-   git clone https://github.com/yourusername/GameEngine.git
+   git clone https://github.com/TaylorBrown96/CSC581_GameEngine.git
    cd GameEngine
    ```
 
@@ -24,10 +20,8 @@ A simple SDL3 project that animates a sprite sheet.
 ## Build
 
 ```bash
-mkdir build
-cd build
-cmake ..
-cmake --build . --config Release
+cmake -S . -B build
+cmake --build build
 ```
 
 ---
@@ -37,8 +31,8 @@ cmake --build . --config Release
 From the `build` folder:
 
 ```bash
-./SkellyIdle   # Linux / macOS
-SkellyIdle.exe # Windows
+./build/Debug/SkellyIdle   # Linux / macOS
+.\build\Debug\GameEngine.exe # Windows
 ```
 
 ---
@@ -46,4 +40,13 @@ SkellyIdle.exe # Windows
 ## Notes
 
 - Make sure `assets/skelly_idle.bmp` exists in the correct location.  
-- Resize the window and use keyboard controls (arrows, space, escape) to interact with the animation.
+
+### Controls
+```
+UP: speed up animation
+DOWN: slow down animation
+RIGHT: increase size
+LEFT: decrease size
+SPACE: pause/resume
+ESC or window close: quit
+```
