@@ -1,0 +1,6 @@
+Files concerning base os layer functions:
+    memory allocation and management
+    thread creation and management
+    math
+    Audio management 
+    Input management
