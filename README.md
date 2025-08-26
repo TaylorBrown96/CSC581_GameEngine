@@ -143,4 +143,8 @@ Teamwork is central to this project. Each team should:
 ### 8. Academic Integrity
 - Follow **University’s Academic Integrity Policy**  
 - No plagiarism or misuse of assets/libraries  
-- Properly cite external resources  
+- Properly cite external resources
+
+
+# Suggested File Structure
+<img width="670" height="634" alt="image" src="https://github.com/user-attachments/assets/b71afe1c-f664-46f2-ba85-4d4122c4eafc" />
