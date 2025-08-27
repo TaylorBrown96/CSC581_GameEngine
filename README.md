@@ -148,3 +148,14 @@ Teamwork is central to this project. Each team should:
 
 # Suggested File Structure
 <img width="670" height="634" alt="image" src="https://github.com/user-attachments/assets/b71afe1c-f664-46f2-ba85-4d4122c4eafc" />
+
+
+# Install & Run
+So your typical workflow is just:
+```bash
+powershell -ExecutionPolicy Bypass -File .\SetupEngine.ps1
+```
+or, with a custom exe name:
+```bash
+powershell -ExecutionPolicy Bypass -File .\SetupEngine.ps1 -Target "SkellyDemo.exe"
+```
