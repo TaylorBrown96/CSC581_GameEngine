@@ -159,3 +159,12 @@ or, with a custom exe name:
 ```bash
 powershell -ExecutionPolicy Bypass -File .\SetupEngine.ps1 -Target "SkellyDemo.exe"
 ```
+
+
+**or**
+If you want to just build and run the game (SDL already downloaded)
+```bash
+cmake -S . -B build
+cmake --build build
+.\build\bin\Debug\GameRunner.exe
+```
