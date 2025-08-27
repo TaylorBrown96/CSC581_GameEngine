@@ -10,16 +10,13 @@ add_library(engine
 )
 
 # Expose "engine/" as an include root so we can do #include "render/Renderer.hpp"
-target_include_directories(engine
-  PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}   # -> allows "render/..." & "core/..." & "utils/..."
-)
+target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Link SDL (vendored or system)
 if(TARGET SDL3::SDL3)
   target_link_libraries(engine PUBLIC SDL3::SDL3)
 else()
-  message(FATAL_ERROR "SDL3::SDL3 not found. Ensure SDL is vendored or installed.")
+  message(FATAL_ERROR "SDL3::SDL3 not found.")
 endif()
 
 # Demo executable using the engine

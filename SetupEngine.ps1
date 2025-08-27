@@ -20,7 +20,7 @@ Usage (from repo root):
 param(
   [switch]$ForceReclone,
   [string]$Generator,
-  [string]$Target = "GameEngine.exe"
+  [string]$Target = "GameRunner.exe"
 )
 
 Set-StrictMode -Version Latest
