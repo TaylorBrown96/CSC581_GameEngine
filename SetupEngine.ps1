@@ -31,7 +31,7 @@ function Test-Command {
   $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
 }
 
-function Ensure-Git {
+function Test-Git {
   if (Test-Command -Name "git") {
     Write-Host "Git found: $((git --version))"
     return
@@ -47,7 +47,7 @@ function Ensure-Git {
   Write-Host "Git installed."
 }
 
-function Ensure-CMake {
+function Test-CMake {
   if (Test-Command -Name "cmake") {
     Write-Host "CMake found: $((cmake --version | Select-Object -First 1))"
     return
@@ -55,7 +55,7 @@ function Ensure-CMake {
   throw "CMake is required. Install from https://cmake.org/download/ or via winget: winget install Kitware.CMake"
 }
 
-function Ensure-Dir {
+function New-Dir {
   param([string]$Path)
   if (-not (Test-Path $Path)) { New-Item -ItemType Directory -Path $Path | Out-Null }
 }
@@ -65,11 +65,11 @@ $RepoRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $RepoRoot
 Write-Host "Repo root: $RepoRoot"
 
-Ensure-Git
-Ensure-CMake
+Test-Git
+Test-CMake
 
 $thirdParty = Join-Path $RepoRoot "third_party"
-Ensure-Dir $thirdParty
+New-Dir $thirdParty
 
 # Clone or update SDL
 $SDLDir = Join-Path $thirdParty "SDL"
@@ -92,7 +92,7 @@ if (-not (Test-Path $SDLDir)) {
 
 # Configure CMake
 $buildDir = Join-Path $RepoRoot "build"
-Ensure-Dir $buildDir
+New-Dir $buildDir
 
 $configureArgs = @("-S", $RepoRoot, "-B", $buildDir, "-DUSE_VENDORED_SDL=ON")
 if ($Generator -and $Generator.Trim().Length -gt 0) {
