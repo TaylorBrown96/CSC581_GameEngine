@@ -1,5 +1,12 @@
 # CSC581_GameEngine
 
+```bash
+git clone https://github.com/libsdl-org/SDL.git vendored/SDL
+cmake -S . -B build
+cmake --build build
+.\build\Debug\GameEngine.exe
+```
+
 ## 📖 Project Introduction
 The **Game Engine Construction Project** is designed to provide comprehensive, hands-on experience in the **design, development, integration, and testing** of a functional game engine.  
 In addition to team-based engine development, each student will implement an **individual game** using the shared engine to showcase system functionalities.  
