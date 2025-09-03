@@ -55,7 +55,6 @@ set(REQUIRED_SOURCES
     src/Render.cpp
     src/Physics.cpp
     src/Collisions.cpp
-    src/Entity.cpp
 )
 
 # Start with required sources

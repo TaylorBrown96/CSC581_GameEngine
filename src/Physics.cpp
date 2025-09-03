@@ -2,19 +2,16 @@
 #include "Physics.h"
 #include "Entity.h"
 
-void PhysicsSystem::ApplyPhysics(Entity* entity, float deltaTime) {
-    if (!entity->hasPhysics || entity->isStatic) return;
+void PhysicsSystem::ApplyPhysics(Entity *entity, float deltaTime) {
+  if (!entity->hasPhysics || entity->isStatic)
+    return;
 
-    entity->prevX = entity->x;
-    entity->prevY = entity->y;
+  entity->prevX = entity->x;
+  entity->prevY = entity->y;
 
-    if (entity->affectedByGravity) {
-        ApplyGravity(entity, deltaTime);
-    }
-    entity->x += entity->velocityX * deltaTime;
-    entity->y += entity->velocityY * deltaTime;
-}
+  entity->velocityX += entity->forceX * deltaTime;
+  entity->velocityY += entity->forceY * deltaTime;
 
-void PhysicsSystem::ApplyGravity(Entity* entity, float deltaTime) {
-    entity->velocityY += gravity * deltaTime;
+  entity->x += entity->velocityX * deltaTime;
+  entity->y += entity->velocityY * deltaTime;
 }
