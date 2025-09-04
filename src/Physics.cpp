@@ -4,6 +4,7 @@
 void PhysicsSystem::ApplyPhysics(Entity *entity, float deltaTime) {
   if (!entity->hasPhysics || entity->isStatic)
     return;
+
   // entity->prevPosition = entity->position;
 
   // entity->prevX = entity->x;
