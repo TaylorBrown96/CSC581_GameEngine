@@ -1,6 +1,6 @@
 #include "Collisions.h"
 #include <SDL3/SDL.h>
-#include <algorithm>
+// #include <algorithm>
 
 bool CollisionSystem::CheckCollision(const Entity* a, const Entity* b) const {
   SDL_FRect A = a->GetBounds();
