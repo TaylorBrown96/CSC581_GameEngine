@@ -1,17 +1,22 @@
 #include "Input.h"
 
+// SDL3: SDL_GetKeyboardState returns const bool*
+// keyboardState points to SDL's internal array for the *current* frame.
 InputManager::InputManager() : keyboardState(nullptr) {}
 
 void InputManager::Update() {
-  // Store previous key states
-  for (auto &pair : previousKeyState) {
-    pair.second = keyboardState && keyboardState[pair.first];
+  // Fetch the current keyboard state first
+  int numKeys = 0;
+  const bool* state = SDL_GetKeyboardState(&numKeys);
+
+  // Snapshot "previous" for any keys we've tracked so far
+  // (Don't clear the map; we overwrite values for tracked scancodes.)
+  for (auto& kv : previousKeyState) {
+    kv.second = state[kv.first];
   }
 
-  // Get current keyboard state - SDL3 returns const bool* and requires int*
-  // parameter
-  int numKeys;
-  keyboardState = SDL_GetKeyboardState(&numKeys);
+  // Now make this frame's state available
+  keyboardState = state;
 }
 
 bool InputManager::IsKeyPressed(SDL_Scancode scancode) const {
@@ -19,26 +24,27 @@ bool InputManager::IsKeyPressed(SDL_Scancode scancode) const {
 }
 
 bool InputManager::IsKeyJustPressed(SDL_Scancode scancode) const {
-  if (!keyboardState)
-    return false;
+  if (!keyboardState) return false;
 
-  bool currentState = keyboardState[scancode];
-  auto it = previousKeyState.find(scancode);
-  bool previousState = (it != previousKeyState.end()) ? it->second : false;
+  const bool current = keyboardState[scancode];
+  const auto it = previousKeyState.find(scancode);
+  const bool prev = (it != previousKeyState.end()) ? it->second : false;
 
-  // Update previous state for next frame (const_cast is needed here)
-  const_cast<InputManager *>(this)->previousKeyState[scancode] = currentState;
+  // Prepare for next frame: remember what we saw this frame
+  const_cast<InputManager*>(this)->previousKeyState[scancode] = current;
 
-  return currentState && !previousState;
+  return current && !prev;
 }
 
 bool InputManager::IsKeyJustReleased(SDL_Scancode scancode) const {
-  if (!keyboardState)
-    return false;
+  if (!keyboardState) return false;
 
-  bool currentState = keyboardState[scancode];
-  auto it = previousKeyState.find(scancode);
-  bool previousState = (it != previousKeyState.end()) ? it->second : false;
+  const bool current = keyboardState[scancode];
+  const auto it = previousKeyState.find(scancode);
+  const bool prev = (it != previousKeyState.end()) ? it->second : false;
 
-  return !currentState && previousState;
+  // Prepare for next frame
+  const_cast<InputManager*>(this)->previousKeyState[scancode] = current;
+
+  return !current && prev;
 }

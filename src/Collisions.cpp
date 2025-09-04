@@ -68,7 +68,7 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
           dyn->grounded = true;
           db_collision_normal = normals[3];
         } else {
-          stat->grounded = true;
+          //stat->grounded = true;
           db_collision_normal = normals[2];
         }
       }
