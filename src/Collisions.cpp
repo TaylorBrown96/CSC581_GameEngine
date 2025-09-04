@@ -1,5 +1,6 @@
 #include "Collisions.h"
 #include <SDL3/SDL.h>
+#include <vec2.h>
 // #include <algorithm>
 
 bool CollisionSystem::CheckCollision(const Entity* a, const Entity* b) const {
@@ -33,51 +34,50 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity*>& entities) {
             if (A->isStatic == B->isStatic) { dyn = A; stat = B; }
 
             SDL_FRect Db = dyn->GetBounds();
-            SDL_FRect Dprev = dyn->GetPrevBounds();
             SDL_FRect Sb = stat->GetBounds();
 
             SDL_FRect inter{};
             SDL_GetRectIntersectionFloat(&Db, &Sb, &inter);
 
-            // One-way: only resolve if we are moving downward and crossed the top
-            if (stat->isOneWay) {
-                float prevBottom = Dprev.y + Dprev.h;
-                float currBottom = Db.y + Db.h;
-                bool movingDown = dyn->velocityY >= 0.0f;
-                bool crossedTop = (prevBottom <= Sb.y) && (currBottom >= Sb.y);
+            vec2 normals[4] = {
+                {1.0, 0.0}, // RIGHT
+                {-1.0, 0.0}, // LEFT
+                {0.0, 1.0}, // BOTTOM
+                {0.0, -1.0} // TOP
+            };
 
-                if (inter.h <= inter.w && movingDown && crossedTop) {
-                    dyn->y = Sb.y - dyn->height; // snap to top
-                    dyn->velocityY = 0.0f;
-                    dyn->grounded = true;
+            vec2 db_collision_normal,
+                sb_collision_normal;
+            
+            float minimum_penetration = std::min(inter.w, inter.h);
+
+            if (inter.w < inter.h) /** side collision */{
+                if (Db.x < Sb.x) {
+                    db_collision_normal = normals[1];
                 }
-
-                // Skip horizontal and head-hit resolution for one-way platforms
-                A->OnCollision(B);
-                B->OnCollision(A);
-                continue;
+                else {
+                    db_collision_normal = normals[0];
+                }
+            }
+            else /** top collision */ {
+                if (Db.y < Sb.y) {
+                    dyn->grounded = true;
+                    db_collision_normal = normals[3];
+                }
+                else {
+                    stat->grounded = true;
+                    db_collision_normal = normals[2];
+                }
             }
 
-            // Normal 2D AABB resolution (non one-way)
-            if (inter.h <= inter.w) {
-                // Vertical resolution
-                if (dyn->velocityY > 0 && (Db.y + Db.h) > Sb.y && Db.y < Sb.y) {
-                    dyn->y -= inter.h; dyn->velocityY = 0.0f; dyn->grounded = true;
-                } else if (dyn->velocityY < 0 && Db.y < (Sb.y + Sb.h) && (Db.y + Db.h) > (Sb.y + Sb.h)) {
-                    dyn->y += inter.h; dyn->velocityY = 0.0f;
-                } else {
-                    // fallback by centers
-                    if ((Db.y + Db.h * 0.5f) < (Sb.y + Sb.h * 0.5f)) {
-                        dyn->y -= inter.h; dyn->velocityY = 0.0f; dyn->grounded = true;
-                    } else {
-                        dyn->y += inter.h; dyn->velocityY = 0.0f;
-                    }
-                }
-            } else {
-                // Horizontal resolution
-                bool fromLeft = (Db.x + Db.w * 0.5f) < (Sb.x + Sb.w * 0.5f);
-                dyn->x += fromLeft ? -inter.w : inter.w;
-                // optional: dyn->velocityX = 0.0f;
+            sb_collision_normal = neg(db_collision_normal);
+
+            if (!dyn->isStatic && !stat->isStatic) {
+                stat->position = add(stat->position, mul(minimum_penetration * 0.5, sb_collision_normal));
+                dyn->position = add(dyn->position, mul(minimum_penetration * 0.5, db_collision_normal));
+            }   
+            else {
+                dyn->position = add(dyn->position, mul(minimum_penetration, db_collision_normal));
             }
 
             A->OnCollision(B);
