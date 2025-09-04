@@ -1,8 +1,7 @@
 // GameEngine.cpp
 // #include <memory>
-#include <algorithm>
 #include "GameEngine.h"
-
+#include <algorithm>
 
 // GameEngine Implementation
 GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
@@ -104,11 +103,9 @@ void GameEngine::Render() {
   renderSystem->Present();
 }
 
-void GameEngine::AddEntity(Entity* entity) {
-  entities.push_back(entity);
-}
+void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
 
-void GameEngine::RemoveEntity(Entity* entity) {
+void GameEngine::RemoveEntity(Entity *entity) {
   entities.erase(std::remove(entities.begin(), entities.end(), entity),
                  entities.end());
 }
@@ -128,4 +125,3 @@ void GameEngine::Shutdown() {
 
   SDL_Quit();
 }
-

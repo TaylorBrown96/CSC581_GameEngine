@@ -5,9 +5,9 @@
 
 class CollisionSystem {
 public:
-  bool CheckCollision(const Entity* a, const Entity* b) const;
-  bool CheckCollision(const SDL_FRect& a, const SDL_FRect& b) const;
+  bool CheckCollision(const Entity *a, const Entity *b) const;
+  bool CheckCollision(const SDL_FRect &a, const SDL_FRect &b) const;
 
   // Resolves penetration and sets grounded when landing on static bodies.
-  void ProcessCollisions(std::vector<Entity*>& entities);
+  void ProcessCollisions(std::vector<Entity *> &entities);
 };
