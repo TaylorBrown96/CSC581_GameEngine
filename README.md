@@ -1,8 +1,8 @@
 # CSC581_GameEngine
 
 ```bash
-git clone https://github.com/libsdl-org/SDL.git vendored/SDL
-cmake -S . -B build
+git clone https://github.com/TaylorBrown96/CSC581_GameEngine.git --recursive
+cmake -S . -B build -G "<Your build generator of choice>"
 cmake --build build
 .\build\Debug\GameEngine.exe
 ```
