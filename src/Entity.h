@@ -1,6 +1,6 @@
 #pragma once
 #include <SDL3/SDL.h>
-
+#include <vec2.h>
 #include <Input.h>
 
 class Entity {
@@ -10,11 +10,11 @@ private:
   int id;
 
 public:
-  float x = 0.0f, y = 0.0f;
-  float prevX = 0.0f, prevY = 0.0f;
-  float width = 32.0f, height = 32.0f;
-  float velocityX = 0.0f, velocityY = 0.0f;
-  float forceX = 0.0f, forceY = 0.0f;
+  vec2 position;
+  vec2 prevPosition;
+  vec2 dimensions; // 
+  vec2 velocity; // float velocityX = 0.0f, velocityY = 0.0f;
+  vec2 force;
 
   SDL_Texture *texture = nullptr;
   bool isVisible = true;
@@ -29,10 +29,10 @@ public:
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
          float h = 32.0f)
-      : id(nextId++), x(startX), y(startY), prevX(startX), prevY(startY),
-        width(w), height(h) {
+      : id(nextId++), position({.x = startX, .y = startY}), prevPosition(position),
+        dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
-      forceY = 9.8 * 512.0;
+      force.y = 9.8 * 512.0;
     }
   }
   virtual ~Entity() = default;
@@ -42,14 +42,13 @@ public:
   virtual void Update(float, InputManager*) {}
   virtual void OnCollision(Entity*) {}
 
-  inline SDL_FRect GetBounds() const { return SDL_FRect{x, y, width, height}; }
+  inline SDL_FRect GetBounds() const { return SDL_FRect{position.x, position.y, dimensions.x, dimensions.y}; }
   inline SDL_FRect GetPrevBounds() const {
-    return SDL_FRect{prevX, prevY, width, height};
+    return SDL_FRect{prevPosition.x, prevPosition.y, dimensions.x, dimensions.y};
   }
 
   inline void SetPosition(float newX, float newY) {
-    x = newX;
-    y = newY;
+    position = {.x = newX, .y = newY};
   }
   inline void SetTexture(SDL_Texture *tex) { texture = tex; }
   inline SDL_Texture *GetTexture() const { return texture; }

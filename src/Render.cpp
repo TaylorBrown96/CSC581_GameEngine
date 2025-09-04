@@ -1,4 +1,5 @@
 #include "Render.h"
+#include <vec2.h>
 #include <SDL3/SDL.h>
 
 RenderSystem::RenderSystem(SDL_Renderer* renderer)
@@ -51,19 +52,19 @@ void RenderSystem::RenderEntity(const Entity* entity, const SDL_FRect* sourceRec
 }
 
 SDL_FRect RenderSystem::CalculateRenderRect(const Entity* entity) {
-    SDL_FRect rect{ entity->x, entity->y, entity->width, entity->height };
+
+    vec2 pos = entity->position;
+    vec2 dims = entity->dimensions;
 
     if (currentMode == ScalingMode::PROPORTIONAL) {
         const float scaleX = screenWidth  / baseWidth;
         const float scaleY = screenHeight / baseHeight;
-
-        rect.x *= scaleX;
-        rect.y *= scaleY;
-        rect.w *= scaleX;
-        rect.h *= scaleY;
+        vec2 scale = {.x = scaleX, .y = scaleY};
+        pos = mulv(pos, scale);
+        dims = mulv(dims, scale);
     }
 
-    return rect;
+    return (SDL_FRect){.x = pos.x, .y = pos.y, .w = dims.x, .h = dims.y};
 }
 
 void RenderSystem::SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {

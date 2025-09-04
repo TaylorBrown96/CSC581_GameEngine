@@ -48,6 +48,7 @@ if(NOT USE_VENDORED_SDL3)
 endif()
 
 # Define required source files
+
 set(REQUIRED_SOURCES
     src/main.cpp
     src/GameEngine.cpp
@@ -55,6 +56,7 @@ set(REQUIRED_SOURCES
     src/Render.cpp
     src/Physics.cpp
     src/Collisions.cpp
+    src/vec2.cpp
 )
 
 # Start with required sources
