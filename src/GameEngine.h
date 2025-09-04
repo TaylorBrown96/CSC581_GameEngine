@@ -24,7 +24,7 @@ private:
   std::unique_ptr<CollisionSystem> collision;
   std::unique_ptr<RenderSystem> renderSystem;
 
-  std::vector<std::shared_ptr<Entity>> entities;
+  std::vector<Entity*> entities;
 
 public:
   GameEngine();
@@ -35,10 +35,10 @@ public:
   void Shutdown();
   void Render();
   void Update(float deltaTime);
-  std::vector<std::shared_ptr<Entity>> &GetEntities() { return entities; }
+  std::vector<Entity*> &GetEntities() { return entities; }
 
-  void AddEntity(std::shared_ptr<Entity> entity);
-  void RemoveEntity(std::shared_ptr<Entity> entity);
+  void AddEntity(Entity* entity);
+  void RemoveEntity(Entity* entity);
 
   PhysicsSystem *GetPhysics() const { return physics.get(); }
   InputManager *GetInput() const { return input.get(); }

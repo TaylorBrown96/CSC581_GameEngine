@@ -77,3 +77,20 @@ void RenderSystem::Clear() {
 void RenderSystem::Present() {
     SDL_RenderPresent(renderer);
 }
+
+
+SDL_Texture* LoadTexture(SDL_Renderer* renderer, const char* path) {
+    SDL_Surface* surface = SDL_LoadBMP(path);
+    if (!surface) {
+        return nullptr;
+    }
+    
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_DestroySurface(surface);
+    
+    if (!texture) {
+        return nullptr;
+    }
+
+    return texture;
+}

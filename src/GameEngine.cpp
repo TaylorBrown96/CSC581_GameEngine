@@ -53,6 +53,9 @@ void GameEngine::Run() {
       if (event.type == SDL_EVENT_QUIT) {
         running = false;
       }
+      if (input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
+        running = false;
+      }
     }
 
     // Update input
@@ -69,11 +72,11 @@ void GameEngine::Run() {
 void GameEngine::Update(float deltaTime) {
   // Update all entities
   for (auto &entity : entities) {
-    entity->Update(deltaTime);
+    entity->Update(deltaTime, input.get());
 
     // Apply physics if entity has physics enabled
     if (entity->hasPhysics) {
-      physics->ApplyPhysics(entity.get(), deltaTime);
+      physics->ApplyPhysics(entity, deltaTime);
     }
   }
 
@@ -89,18 +92,18 @@ void GameEngine::Render() {
   // Render all visible entities
   for (const auto &entity : entities) {
     if (entity->isVisible) {
-      renderSystem->RenderEntity(entity.get());
+      renderSystem->RenderEntity(entity);
     }
   }
 
   renderSystem->Present();
 }
 
-void GameEngine::AddEntity(std::shared_ptr<Entity> entity) {
+void GameEngine::AddEntity(Entity* entity) {
   entities.push_back(entity);
 }
 
-void GameEngine::RemoveEntity(std::shared_ptr<Entity> entity) {
+void GameEngine::RemoveEntity(Entity* entity) {
   entities.erase(std::remove(entities.begin(), entities.end(), entity),
                  entities.end());
 }
