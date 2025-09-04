@@ -2,8 +2,8 @@
 #include <math.h>
 
 typedef struct vec2 {
-    float x;
-    float y;
+  float x;
+  float y;
 } vec2;
 
 vec2 add(vec2 a, vec2 b);
