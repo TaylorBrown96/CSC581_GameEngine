@@ -38,45 +38,9 @@ int main(int argc, char* argv[]) {
         platform1->SetTexture(platformTexture);
         platform2->SetTexture(platformTexture);
     }
-
-    SDL_Event event; // For event handling
-    Uint32 lastTime = SDL_GetTicks(); // For frame timing
-    Uint32 lastInputCheck = 0; // For input checking
-    const Uint32 INPUT_CHECK_DELAY = 100; // Check input every 100ms to avoid spam
-
-    Uint32 variableTime = 0; // For variable timing
-
-    // inside while(true) in main.cpp
-    while (true) {
-        Uint32 currentTime = SDL_GetTicks();
-        float deltaTime = (currentTime - lastTime) / 1000.0f;
-        lastTime = currentTime;
-
-        // ---- Event Handling ----
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) goto cleanup;
-        }
-
-        engine.GetInput()->Update();
-
-        // Exit key
-        if (engine.GetInput()->IsKeyPressed(SDL_SCANCODE_ESCAPE)) break;
-
-        // ---- Player Movement ----
-
-        /*Jump*/
-       
-        // ---- Update World ----
-        engine.Update(deltaTime);
-        engine.GetCollision()->ProcessCollisions(engine.GetEntities());
-
-        // ---- Render Frame ----
-        engine.Render();
-
-        // ---- Frame Timing ----
-        SDL_Delay(16); // ~60 FPS cap
-    }
-
+    
+    engine.Run();
+    
     cleanup:
     SDL_Log("Cleaning up resources...");
 
