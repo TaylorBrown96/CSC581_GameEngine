@@ -1,3 +1,4 @@
+#pragma once
 #include "GameEngine.h"
 #include <memory>
 
@@ -21,12 +22,21 @@ public:
         frameHeight = 512;
     }
     
-    void Update(float deltaTime) override {
+    void Update(float deltaTime, InputManager* input) override {
         // Update animation
         lastFrameTime += (Uint32)(deltaTime * 1000); // Convert to milliseconds
         if (lastFrameTime >= (Uint32)animationDelay) {
             currentFrame = (currentFrame + 1) % frameCount;
             lastFrameTime = 0;
+        }
+
+        velocityX = 0.0;
+        if (input->IsKeyPressed(SDL_SCANCODE_A)||input->IsKeyPressed(SDL_SCANCODE_LEFT)) velocityX = - 200.0f; // move left
+        if (input->IsKeyPressed(SDL_SCANCODE_D)||input->IsKeyPressed(SDL_SCANCODE_RIGHT)) velocityX = + 200.0f; // move right
+       
+        if (input->IsKeyPressed(SDL_SCANCODE_SPACE) && grounded) {
+            velocityY = -1000.0f;
+            grounded = false;
         }
         
         // Bounce off screen edges (demonstrates entity system working)
@@ -67,7 +77,7 @@ public:
         velocityY = 0.0f;
     }
 
-    void Update(float dt) override {
+    void Update(float dt, InputManager* input) override {
         // Horizontal-only motion for the moving platform
         x += velocityX * dt;
         if (x <= 0 || x >= 1920 - width) velocityX *= -1;
@@ -78,20 +88,3 @@ public:
         velocityX *= -1;
     }
 };
-
-
-SDL_Texture* LoadTexture(SDL_Renderer* renderer, const char* path) {
-    SDL_Surface* surface = SDL_LoadBMP(path);
-    if (!surface) {
-        return nullptr;
-    }
-    
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_DestroySurface(surface);
-    
-    if (!texture) {
-        return nullptr;
-    }
-
-    return texture;
-}

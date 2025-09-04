@@ -1,6 +1,8 @@
 #pragma once
 #include <SDL3/SDL.h>
 
+#include <Input.h>
+
 class Entity {
 private:
   inline static int nextId =
@@ -30,15 +32,15 @@ public:
       : id(nextId++), x(startX), y(startY), prevX(startX), prevY(startY),
         width(w), height(h) {
     if (affectedByGravity) {
-      forceY = 980.0f;
+      forceY = 9.8 * 512.0;
     }
   }
   virtual ~Entity() = default;
 
   int GetId() const { return id; }
 
-  virtual void Update(float) {}
-  virtual void OnCollision(Entity *) {}
+  virtual void Update(float, InputManager*) {}
+  virtual void OnCollision(Entity*) {}
 
   inline SDL_FRect GetBounds() const { return SDL_FRect{x, y, width, height}; }
   inline SDL_FRect GetPrevBounds() const {

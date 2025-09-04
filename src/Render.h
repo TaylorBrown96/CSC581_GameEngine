@@ -34,3 +34,6 @@ public:
 private:
     SDL_FRect CalculateRenderRect(const Entity* entity);
 };
+
+SDL_Texture* LoadTexture(SDL_Renderer* renderer, const char* path);
+

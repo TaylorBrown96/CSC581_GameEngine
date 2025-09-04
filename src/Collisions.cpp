@@ -12,14 +12,14 @@ bool CollisionSystem::CheckCollision(const SDL_FRect& a, const SDL_FRect& b) con
   return SDL_HasRectIntersectionFloat(&a, &b);
 }
 
-void CollisionSystem::ProcessCollisions(std::vector<std::shared_ptr<Entity>>& entities) {
+void CollisionSystem::ProcessCollisions(std::vector<Entity*>& entities) {
     for (auto& e : entities) if (!e->isStatic) e->grounded = false;
 
     const size_t n = entities.size();
     for (size_t i = 0; i < n; ++i) {
         for (size_t j = i + 1; j < n; ++j) {
-            Entity* A = entities[i].get();
-            Entity* B = entities[j].get();
+            Entity* A = entities[i];
+            Entity* B = entities[j];
 
             SDL_FRect Ab = A->GetBounds();
             SDL_FRect Bb = B->GetBounds();
