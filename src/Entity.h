@@ -35,7 +35,7 @@ public:
          float h = 32.0f)
       : id(nextId++), position({.x = startX, .y = startY}), dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
-      force.y = 9.8 * 512.0;
+      force.y = 9.8 * 300.0;
     }
   }
   virtual ~Entity() = default;

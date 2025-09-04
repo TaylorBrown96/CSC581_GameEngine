@@ -76,17 +76,17 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
       sb_collision_normal = neg(db_collision_normal);
 
       if (!dyn->isStatic && !stat->isStatic) {
-        stat->position = add(stat->position, mul(minimum_penetration * 0.5,
+        stat->position = add(stat->position, mul(minimum_penetration * 0.5f,
                                                  sb_collision_normal));
         dyn->position = add(
-            dyn->position, mul(minimum_penetration * 0.5, db_collision_normal));
+            dyn->position, mul(minimum_penetration * 0.5f, db_collision_normal));
       } else {
         dyn->position =
             add(dyn->position, mul(minimum_penetration, db_collision_normal));
       }
 
-      vec2 collision_point = {.x = inter.x + 0.5 * inter.w,
-                              .y = inter.y + 0.5 * inter.h};
+      vec2 collision_point = {.x = inter.x + 0.5f * inter.w,
+                              .y = inter.y + 0.5f * inter.h};
 
       CollisionData cd_dyn = {.point = collision_point,
                               .normal = db_collision_normal};

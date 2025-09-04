@@ -2,9 +2,10 @@
 
 ```bash
 git clone https://github.com/TaylorBrown96/CSC581_GameEngine.git --recursive
+#git submodule update --init --recursive
 cmake -S . -B build -G "<Your build generator of choice>"
-cmake --build build
-.\build\Debug\GameEngine.exe
+cmake --build build --config Release
+.\build\Release\GameEngine.exe
 ```
 
 ## 📖 Project Introduction

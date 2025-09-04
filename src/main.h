@@ -43,9 +43,11 @@ public:
       grounded = false;
     }
 
-    // Bounce off screen edges (demonstrates entity system working)
-    if (position.x <= 0 || position.x >= 1920 - dimensions.x) {
-      velocity.x *= -1.0;
+    // Bounce off screen edges (demonstrates entity system working) using window bounds push opposite direction
+    if (position.x <= 0) {
+      position.x = 0;
+    } else if (position.x + dimensions.x >= 1920) {
+      position.x = 1920 - dimensions.x;
     }
 
     // Reset if falls off bottom (demonstrates physics working)
@@ -77,15 +79,20 @@ public:
     hasPhysics = false;
     affectedByGravity = false;
     isOneWay = true; // <- key line
-    velocity.x = moving ? 100.0f : 0.0f;
+    velocity.x = moving ? 200.0f : 0.0f;
     velocity.y = 0.0f;
   }
 
   void Update(float dt, InputManager *input) override {
     // Horizontal-only motion for the moving platform
     position = add(position, mul(dt, velocity));
-    if (position.x <= 0 || position.x >= 1920 - dimensions.x)
-      velocity.x *= -1;
+    if (position.x < 0) {
+      position.x = 0;
+      LeftRightOccilate(this);
+    } else if (position.x + dimensions.x > 1920) {
+      position.x = 1920 - dimensions.x;
+      LeftRightOccilate(this);
+    }
   }
 
   void LeftRightOccilate(Entity *other) {

@@ -69,7 +69,9 @@ SDL_FRect RenderSystem::CalculateRenderRect(const Entity *entity) {
     dims = mulv(dims, scale);
   }
 
-  return (SDL_FRect){.x = pos.x, .y = pos.y, .w = dims.x, .h = dims.y};
+  SDL_FRect rect = {.x = pos.x, .y = pos.y, .w = dims.x, .h = dims.y};
+
+  return (SDL_FRect)rect;
 }
 
 void RenderSystem::SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
