@@ -45,7 +45,7 @@ void GameEngine::Run() {
   while (running) {
     // Calculate delta time
     Uint32 currentTime = SDL_GetTicks();
-    float deltaTime = (currentTime - lastTime) / 1000.0f;
+    float deltaTime = (float)(currentTime - lastTime);
     lastTime = currentTime;
 
     // Handle events
@@ -62,10 +62,12 @@ void GameEngine::Run() {
     input->Update();
 
     // Update game
-    Update(deltaTime);
+    Update(deltaTime / 1000.0);
 
     // Render
     Render();
+    float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
+    SDL_Delay(delay);
   }
 }
 
