@@ -1,6 +1,8 @@
 // GameEngine.cpp
-#include "GameEngine.h"
+// #include <memory>
 #include <algorithm>
+#include "GameEngine.h"
+
 
 // GameEngine Implementation
 GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
@@ -66,6 +68,7 @@ void GameEngine::Run() {
 
     // Render
     Render();
+
     float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
     SDL_Delay(delay);
   }
