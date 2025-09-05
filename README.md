@@ -1,51 +1,31 @@
 # CSC581_GameEngine
+<p align="center">
+  <img src="https://img.shields.io/badge/CSC581-Game%20Engine%20Construction-%234285F4?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Mac-%236DB33F?style=for-the-badge&logo=windows&logoColor=white" />
+  <img src="https://img.shields.io/badge/C++20-Enabled-%2300599C?style=for-the-badge&logo=cplusplus&logoColor=white" />
+  <img src="https://img.shields.io/badge/SDL3-Powered-%23FF6F00?style=for-the-badge&logo=googlegames&logoColor=white" />
+</p>
 
+The **Game Engine Construction Project** is designed to provide comprehensive, hands-on experience in the **design, development, integration, and testing** of a functional game engine. In addition to team-based engine development, each student will implement an **individual game** using the shared engine to showcase system functionalities.  
+
+---
+
+## Installation
 ```bash
 git clone https://github.com/TaylorBrown96/CSC581_GameEngine.git --recursive
-#git submodule update --init --recursive
-cmake -S . -B build -G "<Your build generator of choice>"
+cd .\CSC581_GameEngine\
+cmake -S . -B build
 cmake --build build --config Release
 .\build\Release\GameEngine.exe
 ```
 
-## 📖 Project Introduction
-The **Game Engine Construction Project** is designed to provide comprehensive, hands-on experience in the **design, development, integration, and testing** of a functional game engine.  
-In addition to team-based engine development, each student will implement an **individual game** using the shared engine to showcase system functionalities.  
+> [!NOTE]  
+> Run this command after you clone the repo and it was not the main branch:  
+> `git submodule update --init --recursive`
 
-This project emphasizes:
-- Game engine architecture  
-- System implementation and integration  
-- Problem-solving in real-world game development scenarios  
+---
 
-
-## 🎯 Project Purpose
-By the end of the semester, you will:
-- Develop a **modular, reusable game engine** capable of supporting multiple game genres.  
-- Demonstrate system functionality via **individual mini-games**.  
-- Reflect on your contributions, design decisions, and challenges through short papers.  
-- Gain experience in **collaborative development workflows** using industry-standard tools.  
-
-
-## 🗂️ Overall Format
-- **Semester-long, team-based project** with five graded milestones.  
-- Each milestone includes both **team contributions** (engine development) and **individual deliverables** (mini-games + reflection papers).  
-- All submissions must comply with the **University’s Academic Integrity Policy**.  
-
-
-## 🧑‍💻 Learning Outcomes
-This project supports the following competencies:
-
-- **CC1**: Define the core architectural components and layers of a game engine.  
-- **CC2**: Design and implement a game engine with integrated, communicating systems.  
-- **CC3**: Evaluate engine designs for varied game genres and needs.  
-- **CC4**: Implement systems supporting varied game functionalities.  
-- **CC5**: Implement a conceptual game object model using software object modeling.  
-- **CC6**: Test and troubleshoot integrated engine systems.  
-- **CC7**: Build and refine a general-purpose game engine.  
-- **CC8**: Develop multiple games using a custom-built engine.  
-
-
-## 📌 Project Scenario & Process
+## Project Scenario & Process
 Your team has been tasked with creating a **modular, reusable engine** that supports rapid development for multiple game genres.  
 The engine will be built through **five major milestones**, each focusing on specific system features.  
 
@@ -65,32 +45,14 @@ The engine will be built through **five major milestones**, each focusing on spe
 5. **Manage Game Engine Resources** (Modules 13–15)  
    - Resource management, input handling, and scripting support.  
 
+---
+
+## Deliverables & Assessment
 Each milestone requires:  
 - Team meetings for planning and task assignment.  
 - Team-based contributions to engine design, implementation, and testing.  
 - Individual development of a **mini-game** showcasing milestone features.  
 - A **reflection paper** explaining contributions and decision-making.  
-
-
-## 🛠️ Tools & Resources
-- **SDL 3** – Core rendering library  
-- **Code Editors** – Visual Studio 2022, VS Code, Eclipse, or CLion/Rider  
-- **CMake** – Cross-platform build system  
-- **Git Repository** – Version control (e.g., NCSU GitHub)  
-- **Documentation Tools** – Markdown or LaTeX (with screenshots for visual evidence)  
-- **Assets** – Sample Game Asset Manager (with citations for external resources)  
-
-
-## 🤝 Collaboration Process
-Teamwork is central to this project. Each team should:  
-- Establish **ground rules** for expectations and responsibilities.  
-- Use a **shared repository** with version control.  
-- Hold **two weekly meetings** (virtual or in-person) with agendas and notes.  
-- Use **collaboration tools** (Discord, Slack, Zoom) for communication.  
-- Ensure equitable workload distribution and maintain role documentation.  
-
-
-## 📦 Deliverables & Assessment
 
 ### Each Milestone Submission Includes
 **Team Deliverables**:
@@ -110,8 +72,9 @@ Teamwork is central to this project. Each team should:
 > **Note:**   
 > - Since we are CSC 581 students we will need to complete all components, including optional ones (graded out of 125 pts).  
 
+---
 
-# 📜 Team Ground Rules
+## Team Ground Rules
 
 ### 1. Communication
 - Primary platform: **Discord**  
@@ -151,8 +114,4 @@ Teamwork is central to this project. Each team should:
 ### 8. Academic Integrity
 - Follow **University’s Academic Integrity Policy**  
 - No plagiarism or misuse of assets/libraries  
-- Properly cite external resources
-
-
-# Suggested File Structure
-<img width="670" height="634" alt="image" src="https://github.com/user-attachments/assets/b71afe1c-f664-46f2-ba85-4d4122c4eafc" />
+- Properly cite external resources  
