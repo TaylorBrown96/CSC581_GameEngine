@@ -8,7 +8,7 @@ GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize() {
+bool GameEngine::Initialize(const char* title, int resx, int resy) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
@@ -16,7 +16,9 @@ bool GameEngine::Initialize() {
   }
 
   // Create window (1920x1080 as required)
-  window = SDL_CreateWindow("Game Engine", 1920, 1080, 0);
+  winsizeX = resx;
+  winsizeY = resy;
+  window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
   if (!window) {
     SDL_Log("Failed to create window: %s", SDL_GetError());
     return false;
@@ -33,7 +35,7 @@ bool GameEngine::Initialize() {
   physics = std::make_unique<PhysicsSystem>();
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
-  renderSystem = std::make_unique<RenderSystem>(renderer);
+  renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
 
   running = true;
   return true;
@@ -87,12 +89,18 @@ void GameEngine::Update(float deltaTime) {
   // Process collisions
   collision->ProcessCollisions(entities);
 }
-
+#include <iostream>
 void GameEngine::Render() {
+  if (renderSystem->GetScalingMode() == ScalingMode::PROPORTIONAL) {
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+    renderSystem->screenHeight = (float)h;
+    renderSystem->screenWidth = (float)w;
+  }
   // Clear screen to blue as required
   renderSystem->SetBackgroundColor(0, 100, 200); // Blue background
   renderSystem->Clear();
-
+  
   // Render all visible entities
   for (const auto &entity : entities) {
     if (entity->isVisible) {

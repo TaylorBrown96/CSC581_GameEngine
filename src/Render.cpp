@@ -5,14 +5,24 @@
 
 RenderSystem::RenderSystem(SDL_Renderer *renderer)
     : renderer(renderer), currentMode(ScalingMode::CONSTANT_SIZE),
-      screenWidth(1920.0f), screenHeight(1080.0f), baseWidth(1920.0f),
-      baseHeight(1080.0f) {}
+      baseWidth(1920.0f),
+      baseHeight(1080.0f), 
+      screenWidth(baseWidth),
+      screenHeight(baseHeight) {}
+
+RenderSystem::RenderSystem(SDL_Renderer *renderer, int width, int height)
+    : renderer(renderer), currentMode(ScalingMode::CONSTANT_SIZE),
+      baseWidth((float)width),
+      baseHeight((float)height),
+      screenWidth(baseWidth),
+      screenHeight(baseHeight)  {}
 
 void RenderSystem::SetScalingMode(ScalingMode mode) {
   currentMode = mode;
   SDL_Log("Scaling mode changed to: %s", mode == ScalingMode::CONSTANT_SIZE
                                              ? "Constant Size"
                                              : "Proportional");
+  
 }
 
 void RenderSystem::ToggleScalingMode() {

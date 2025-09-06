@@ -12,11 +12,15 @@ class RenderSystem {
 private:
   SDL_Renderer *renderer;
   ScalingMode currentMode;
-  float screenWidth, screenHeight;
+  
   float baseWidth, baseHeight; // Reference resolution for proportional scaling
 
 public:
+  float screenWidth, screenHeight;
+
   explicit RenderSystem(SDL_Renderer *renderer);
+
+  RenderSystem(SDL_Renderer *renderer, int width, int height);
 
   void SetScalingMode(ScalingMode mode);
   ScalingMode GetScalingMode() const { return currentMode; }
@@ -32,6 +36,7 @@ public:
   void Clear();
   void Present();
 
+  
 private:
   SDL_FRect CalculateRenderRect(const Entity *entity);
 };

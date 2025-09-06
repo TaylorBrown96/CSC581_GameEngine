@@ -7,9 +7,10 @@ int main(int argc, char *argv[]) {
   (void)argv;
 
   GameEngine engine;
-  if (!engine.Initialize()) {
+  if (!engine.Initialize("Game Engine", 1800, 1000)) {
     return 1;
   }
+  engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
 
   // Create entities
   TestEntity *testEntity = new TestEntity(100, 100);
