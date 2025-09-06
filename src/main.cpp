@@ -3,6 +3,8 @@
 #include "main.h"
 
 int main(int argc, char *argv[]) {
+  (void)argc;
+  (void)argv;
 
   GameEngine engine;
   if (!engine.Initialize()) {
@@ -46,7 +48,6 @@ int main(int argc, char *argv[]) {
 
   engine.Run();
 
-cleanup:
   SDL_Log("Cleaning up resources...");
   engine.Shutdown();
   SDL_Log("Shutdown complete. Exiting.");

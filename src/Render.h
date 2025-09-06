@@ -2,6 +2,7 @@
 #include "Entity.h"
 #include <SDL3/SDL.h>
 
+
 enum class ScalingMode {
   CONSTANT_SIZE, // Pixel-based
   PROPORTIONAL   // Percentage-based

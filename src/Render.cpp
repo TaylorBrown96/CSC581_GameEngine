@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 #include <vec2.h>
 
+
 RenderSystem::RenderSystem(SDL_Renderer *renderer)
     : renderer(renderer), currentMode(ScalingMode::CONSTANT_SIZE),
       screenWidth(1920.0f), screenHeight(1080.0f), baseWidth(1920.0f),
@@ -29,7 +30,7 @@ void RenderSystem::RenderEntity(const Entity *entity) {
   // Use your entity's texture member directly to match your current codebase.
   // If you have an accessor, replace with: SDL_Texture* tex =
   // entity->GetTexture();
-  SDL_Texture *tex = entity->texture;
+  SDL_Texture *tex = entity->tex.sheet;
   if (!tex)
     return;
 
@@ -48,7 +49,7 @@ void RenderSystem::RenderEntity(const Entity *entity,
                                 const SDL_FRect *sourceRect) {
   if (!entity)
     return;
-  SDL_Texture *tex = entity->texture;
+  SDL_Texture *tex = entity->tex.sheet;
   if (!tex)
     return;
 
