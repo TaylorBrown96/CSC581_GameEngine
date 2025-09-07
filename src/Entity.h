@@ -8,6 +8,15 @@ typedef struct CollisionData {
   vec2 normal;
 } CollisionData;
 
+typedef struct Texture {
+  SDL_Texture* sheet;
+  uint32_t num_frames_x;
+  uint32_t num_frames_y;
+  uint32_t frame_width;
+  uint32_t frame_height;
+} Texture;
+
+
 class Entity {
 private:
   inline static int nextId =
@@ -20,7 +29,7 @@ public:
   vec2 velocity;   // float velocityX = 0.0f, velocityY = 0.0f;
   vec2 force;
 
-  SDL_Texture *texture = nullptr;
+  Texture tex;
   bool isVisible = true;
 
   bool hasPhysics = true;
@@ -29,7 +38,7 @@ public:
   bool grounded = false;
   bool isOneWay = false;
 
-  virtual bool GetSourceRect(SDL_FRect &out) const { return false; }
+  virtual bool GetSourceRect(SDL_FRect &out) const { (void)out; return false; }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
          float h = 32.0f)
@@ -37,6 +46,7 @@ public:
     if (affectedByGravity) {
       force.y = 9.8 * 300.0;
     }
+    tex.sheet = nullptr;
   }
   virtual ~Entity() = default;
 
@@ -51,6 +61,15 @@ public:
   inline void SetPosition(float newX, float newY) {
     position = {.x = newX, .y = newY};
   }
-  inline void SetTexture(SDL_Texture *tex) { texture = tex; }
-  inline SDL_Texture *GetTexture() const { return texture; }
+  inline void SetTexture(SDL_Texture *texp) { tex.sheet = texp; }
+  inline SDL_Texture *GetTexture() const { return tex.sheet; }
+  
+  SDL_FRect SampleTextureAt(int x, int y) const {
+    return {
+      .x = (float)(x * tex.frame_width),
+      .y = (float)(y * tex.frame_height),
+      .w = (float)(tex.frame_width),
+      .h = (float)(tex.frame_height)
+    };  
+  }
 };
