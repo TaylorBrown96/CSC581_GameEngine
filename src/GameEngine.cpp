@@ -8,7 +8,7 @@ GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize() {
+bool GameEngine::Initialize(const char* title, int resx, int resy) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
@@ -16,7 +16,9 @@ bool GameEngine::Initialize() {
   }
 
   // Create window (1920x1080 as required)
-  window = SDL_CreateWindow("Game Engine", 1920, 1080, 0);
+  winsizeX = resx;
+  winsizeY = resy;
+  window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
   if (!window) {
     SDL_Log("Failed to create window: %s", SDL_GetError());
     return false;
@@ -33,7 +35,7 @@ bool GameEngine::Initialize() {
   physics = std::make_unique<PhysicsSystem>();
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
-  renderSystem = std::make_unique<RenderSystem>(renderer);
+  renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
 
   running = true;
   return true;
@@ -51,14 +53,10 @@ void GameEngine::Run() {
 
     // Handle events
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT) {
+      if (event.type == SDL_EVENT_QUIT || input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
-      }
-      if (input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
-        running = false;
-      }
+      }   
     }
-
     // Update input
     input->Update();
 
@@ -89,6 +87,20 @@ void GameEngine::Update(float deltaTime) {
 }
 
 void GameEngine::Render() {
+  if (input->IsKeyPressed(SDL_SCANCODE_0)){
+    renderSystem->SetScalingMode(ScalingMode::CONSTANT_SIZE);
+  }
+  if (input->IsKeyPressed(SDL_SCANCODE_9)){
+    renderSystem->SetScalingMode(ScalingMode::PROPORTIONAL);
+  }
+
+
+  if (renderSystem->GetScalingMode() == ScalingMode::PROPORTIONAL) {
+    int w, h;
+    SDL_GetWindowSize(window, &w, &h);
+    renderSystem->screenHeight = (float)h;
+    renderSystem->screenWidth = (float)w;
+  }
   // Clear screen to blue as required
   renderSystem->SetBackgroundColor(0, 100, 200); // Blue background
   renderSystem->Clear();

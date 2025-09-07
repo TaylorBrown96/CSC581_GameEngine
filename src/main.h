@@ -8,9 +8,7 @@ private:
   int currentFrame;
   Uint32 lastFrameTime;
   int animationDelay;
-  int frameCount;
-  int frameWidth;
-  int frameHeight;
+  
   Entity* groundRef = nullptr;   // platform we're standing on (if any)
   float   groundVX  = 0.0f;      // platform's current x velocity
 
@@ -21,16 +19,18 @@ public:
     currentFrame = 0;
     lastFrameTime = 0;
     animationDelay = 200;
-    frameCount = 8;
-    frameWidth = 512;
-    frameHeight = 512;
+
+    tex.num_frames_x = 8;
+    tex.num_frames_y = 0;
+    tex.frame_width = 512;
+    tex.frame_height = 512;
   }
 
   void Update(float deltaTime, InputManager *input) override {
     // Update animation
     lastFrameTime += (Uint32)(deltaTime * 1000); // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
-      currentFrame = (currentFrame + 1) % frameCount;
+      currentFrame = (currentFrame + 1) % tex.num_frames_x;
       lastFrameTime = 0;
     }
 
@@ -100,10 +100,7 @@ public:
 
   // Get current frame for rendering
   bool GetSourceRect(SDL_FRect &out) const override {
-    out.x = static_cast<float>(currentFrame * frameWidth);
-    out.y = 0.0f;
-    out.w = static_cast<float>(frameWidth);
-    out.h = static_cast<float>(frameHeight);
+    out = SampleTextureAt(currentFrame, 0);
     return true;
   }
 };
@@ -121,6 +118,7 @@ public:
   }
 
   void Update(float dt, InputManager *input) override {
+    (void) input;
     // Horizontal-only motion for the moving platform
     position = add(position, mul(dt, velocity));
     if (position.x < 0) {
@@ -133,6 +131,7 @@ public:
   }
 
   void LeftRightOccilate(Entity *other) {
+    (void)other;
     // multiply the xvelocity by -1 to reverse direction
     velocity.x *= -1;
   }

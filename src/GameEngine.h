@@ -15,6 +15,8 @@
 // Core Engine Class
 class GameEngine {
 private:
+  int winsizeX;
+  int winsizeY;
   SDL_Window *window;
   SDL_Renderer *renderer;
   bool running;
@@ -30,7 +32,7 @@ public:
   GameEngine();
   ~GameEngine();
 
-  bool Initialize();
+  bool Initialize(const char* title, int resx, int resy);
   void Run();
   void Shutdown();
   void Render();
