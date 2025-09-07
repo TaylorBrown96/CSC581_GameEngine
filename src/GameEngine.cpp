@@ -53,14 +53,10 @@ void GameEngine::Run() {
 
     // Handle events
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_EVENT_QUIT) {
+      if (event.type == SDL_EVENT_QUIT || input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
-      }
-      if (input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
-        running = false;
-      }
+      }   
     }
-
     // Update input
     input->Update();
 
@@ -89,8 +85,16 @@ void GameEngine::Update(float deltaTime) {
   // Process collisions
   collision->ProcessCollisions(entities);
 }
-#include <iostream>
+
 void GameEngine::Render() {
+  if (input->IsKeyPressed(SDL_SCANCODE_0)){
+    renderSystem->SetScalingMode(ScalingMode::CONSTANT_SIZE);
+  }
+  if (input->IsKeyPressed(SDL_SCANCODE_9)){
+    renderSystem->SetScalingMode(ScalingMode::PROPORTIONAL);
+  }
+
+
   if (renderSystem->GetScalingMode() == ScalingMode::PROPORTIONAL) {
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
@@ -100,7 +104,7 @@ void GameEngine::Render() {
   // Clear screen to blue as required
   renderSystem->SetBackgroundColor(0, 100, 200); // Blue background
   renderSystem->Clear();
-  
+
   // Render all visible entities
   for (const auto &entity : entities) {
     if (entity->isVisible) {
