@@ -248,9 +248,18 @@ public:
 
   void OnCollision(Entity* other, CollisionData*) override {
     if (auto* p = dynamic_cast<Player*>(other)) {
+      if (isVisible == false) return; // already "dead"
       p->position = {100.f,100.f};
       p->velocity = {0.f,0.f};
       p->grounded = false;
+
+      // Remove enemy from game (delte from entity list in main.cpp)
+      isVisible = false;
+      hasPhysics = false;
+      affectedByGravity = false;
+      dimensions = {0.f, 0.f};
+      position = {-1000.f, -1000.f}; // offscreen
+      SetTexture(nullptr);
     }
   }
 
