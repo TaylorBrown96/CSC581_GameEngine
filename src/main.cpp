@@ -28,9 +28,9 @@ int main(int argc, char *argv[]) {
       true; // treat as static for collisions if you have special handling
 
   // Add entities to the engine
-  engine.AddEntity(testEntity);
-  engine.AddEntity(platform1);
-  engine.AddEntity(platform2);
+  engine.GetEntityManager()->AddEntity(testEntity);
+  engine.GetEntityManager()->AddEntity(platform1);
+  engine.GetEntityManager()->AddEntity(platform2);
 
   SDL_Texture *entityTexture = 
     LoadTexture(engine.GetRenderer(),

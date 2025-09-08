@@ -1,7 +1,12 @@
 #pragma once
-#include <Input.h>
+
 #include <SDL3/SDL.h>
-#include <vec2.h>
+#include <vector>
+
+#include "Input.h"
+#include "vec2.h"
+
+class EntityManager;
 
 typedef struct CollisionData {
   vec2 point;
@@ -52,7 +57,8 @@ public:
 
   int GetId() const { return id; }
 
-  virtual void Update(float, InputManager *) {}
+
+  virtual void Update(float, InputManager*, EntityManager*) {}
   virtual void OnCollision(Entity *, CollisionData *) {}
 
   inline SDL_FRect GetBounds() const {
@@ -73,3 +79,16 @@ public:
     };  
   }
 };
+
+class EntityManager {
+    std::vector<Entity*> entities;
+public:
+    EntityManager() {
+
+    }
+    void AddEntity(Entity *entity);
+    void RemoveEntity(Entity *entity);
+    void ClearAllEntities();
+    std::vector<Entity*>& getEntityVectorRef() {return entities;};
+};
+

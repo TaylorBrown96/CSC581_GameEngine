@@ -1,0 +1,13 @@
+#include "Entity.h"
+#include <algorithm>
+
+void EntityManager::AddEntity(Entity *entity) { entities.push_back(entity); }
+
+void EntityManager::RemoveEntity(Entity *entity) {
+  entities.erase(std::remove(entities.begin(), entities.end(), entity),
+                 entities.end());
+}
+
+void EntityManager::ClearAllEntities() {
+    entities.clear();
+}

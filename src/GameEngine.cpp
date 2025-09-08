@@ -36,6 +36,7 @@ bool GameEngine::Initialize(const char* title, int resx, int resy) {
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
+  entityManager = std::make_unique<EntityManager>();
 
   running = true;
   return true;
@@ -57,24 +58,27 @@ void GameEngine::Run() {
         running = false;
       }   
     }
+    std::vector<Entity*>& entities = entityManager->getEntityVectorRef();
+
     // Update input
     input->Update();
 
     // Update game
-    Update(deltaTime / 1000.0);
+    Update(deltaTime / 1000.0, entities);
 
     // Render
-    Render();
+    Render(entities);
 
     float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
     SDL_Delay(delay);
   }
 }
 
-void GameEngine::Update(float deltaTime) {
+void GameEngine::Update(float deltaTime, std::vector<Entity*>& entities) {
   // Update all entities
+
   for (auto &entity : entities) {
-    entity->Update(deltaTime, input.get());
+    entity->Update(deltaTime, input.get(), entityManager.get());
 
     // Apply physics if entity has physics enabled
     if (entity->hasPhysics) {
@@ -86,7 +90,7 @@ void GameEngine::Update(float deltaTime) {
   collision->ProcessCollisions(entities);
 }
 
-void GameEngine::Render() {
+void GameEngine::Render(std::vector<Entity*>& entities) {
   if (input->IsKeyPressed(SDL_SCANCODE_0)){
     renderSystem->SetScalingMode(ScalingMode::CONSTANT_SIZE);
   }
@@ -115,15 +119,15 @@ void GameEngine::Render() {
   renderSystem->Present();
 }
 
-void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
+// void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
 
-void GameEngine::RemoveEntity(Entity *entity) {
-  entities.erase(std::remove(entities.begin(), entities.end(), entity),
-                 entities.end());
-}
+// void GameEngine::RemoveEntity(Entity *entity) {
+//   entities.erase(std::remove(entities.begin(), entities.end(), entity),
+//                  entities.end());
+// }
 
 void GameEngine::Shutdown() {
-  entities.clear();
+  entityManager->ClearAllEntities();
 
   if (renderer) {
     SDL_DestroyRenderer(renderer);

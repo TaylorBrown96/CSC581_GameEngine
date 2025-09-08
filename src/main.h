@@ -26,7 +26,7 @@ public:
     tex.frame_height = 512;
   }
 
-  void Update(float deltaTime, InputManager *input) override {
+  void Update(float deltaTime, InputManager* input, EntityManager* entitySpawner) override {
     // Update animation
     lastFrameTime += (Uint32)(deltaTime * 1000); // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
@@ -117,7 +117,7 @@ public:
     velocity.y = 0.0f;
   }
 
-  void Update(float dt, InputManager *input) override {
+  void Update(float dt, InputManager *input, EntityManager* entitySpawner) override {
     (void) input;
     // Horizontal-only motion for the moving platform
     position = add(position, mul(dt, velocity));
