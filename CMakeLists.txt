@@ -50,7 +50,7 @@ endif()
 # Define required source files
 
 set(REQUIRED_SOURCES
-    src/main.cpp
+    game/main.cpp
     src/GameEngine.cpp
     src/Input.cpp
     src/Render.cpp
@@ -80,6 +80,9 @@ set(ENGINE_HEADERS
     src/Physics.h
     src/Collisions.h
     src/Entity.h
+    src/Config.h
+    src/vec2.h
+    game/main.h
 )
 
 # Create your game executable target
