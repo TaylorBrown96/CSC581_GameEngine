@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include "GameEngine.h"
-#include "Config.h"
 // #include <memory>
 
 class TestEntity : public Entity {
@@ -15,7 +14,7 @@ private:
 
 public:
   
-  TestEntity(float x, float y) : Entity(x, y, cfg::PLAYER_WIDTH, cfg::PLAYER_HEIGHT) {
+  TestEntity(float x, float y) : Entity(x, y, 128, 128) {
     velocity.x = 0.0f; // Move right at 150 pixels per second
     currentFrame = 0;
     lastFrameTime = 0;
@@ -36,7 +35,7 @@ public:
     }
 
     // speeds
-    constexpr float runSpeed = cfg::PLAYER_SPEED_X;
+    constexpr float runSpeed = 200.0f;
 
     // input
     const bool left  = input->IsKeyPressed(SDL_SCANCODE_A) ||
@@ -63,15 +62,15 @@ public:
     }
 
     if (input->IsKeyPressed(SDL_SCANCODE_SPACE) && grounded) {
-      velocity.y = cfg::PLAYER_JUMP_IMPULSE;
+      velocity.y = -1500.0f;
       grounded = false;
     }
 
     // Bounce off screen edges (demonstrates entity system working) using window bounds push opposite direction
     if (position.x <= 0) {
       position.x = 0;
-    } else if (position.x + dimensions.x >= cfg::SCREEN_WIDTH) {
-      position.x = cfg::SCREEN_WIDTH - dimensions.x;
+    } else if (position.x + dimensions.x >= 1920) {
+      position.x = 1920 - dimensions.x;
     }
 
     // Reset if falls off bottom (demonstrates physics working)
@@ -79,7 +78,7 @@ public:
       groundRef = nullptr;
       groundVX  = 0.0f;
     }
-    if (position.y > cfg::SCREEN_HEIGHT) { // fell off bottom of screen
+    if (position.y > 1080) { // fell off bottom of screen
       position.x = 100;
       position.y = 100;
       velocity.y = 0.0f;
@@ -125,8 +124,8 @@ public:
     if (position.x < 0) {
       position.x = 0;
       LeftRightOccilate(this);
-    } else if (position.x + dimensions.x > cfg::SCREEN_WIDTH) {
-      position.x = cfg::SCREEN_WIDTH - dimensions.x;
+    } else if (position.x + dimensions.x > 1920) {
+      position.x = 1920 - dimensions.x;
       LeftRightOccilate(this);
     }
   }

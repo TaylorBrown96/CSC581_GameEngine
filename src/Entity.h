@@ -1,6 +1,5 @@
 #pragma once
 #include <Input.h>
-#include <Config.h>
 #include <SDL3/SDL.h>
 #include <vec2.h>
 
@@ -41,11 +40,11 @@ public:
 
   virtual bool GetSourceRect(SDL_FRect &out) const { (void)out; return false; }
 
-  Entity(float startX = 0.0f, float startY = 0.0f, float w = cfg::DEFAULT_ENTITY_W,
-         float h = cfg::DEFAULT_ENTITY_H)
+  Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
+         float h = 32.0f)
       : id(nextId++), position({.x = startX, .y = startY}), dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
-      force.y = cfg::GRAVITY_Y;
+      force.y = 9.8 * 300.0;
     }
     tex.sheet = nullptr;
   }

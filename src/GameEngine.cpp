@@ -2,7 +2,6 @@
 // #include <memory>
 #include "GameEngine.h"
 #include <algorithm>
-#include <Config.h>
 
 // GameEngine Implementation
 GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
@@ -67,7 +66,7 @@ void GameEngine::Run() {
     // Render
     Render();
 
-    float delay = std::max(0.0, 1000.0 / cfg::TARGET_FPS - deltaTime);
+    float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
     SDL_Delay(delay);
   }
 }
@@ -103,7 +102,7 @@ void GameEngine::Render() {
     renderSystem->screenWidth = (float)w;
   }
   // Clear screen to blue as required
-  renderSystem->SetBackgroundColor(cfg::CLEAR_R, cfg::CLEAR_G, cfg::CLEAR_B, cfg::CLEAR_A);
+  renderSystem->SetBackgroundColor(0, 100, 200); // Blue background
   renderSystem->Clear();
 
   // Render all visible entities
