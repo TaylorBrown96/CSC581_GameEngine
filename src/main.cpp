@@ -1,13 +1,14 @@
 #include "GameEngine.h"
 // #include <memory>
 #include "main.h"
+#include "Config.h"
 
 int main(int argc, char *argv[]) {
   (void)argc;
   (void)argv;
 
   GameEngine engine;
-  if (!engine.Initialize("Game Engine", 1800, 1000)) {
+  if (!engine.Initialize("Game Engine", cfg::SCREEN_WIDTH, cfg::SCREEN_HEIGHT)) {
     return 1;
   }
   engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
@@ -34,14 +35,14 @@ int main(int argc, char *argv[]) {
 
   SDL_Texture *entityTexture = 
     LoadTexture(engine.GetRenderer(),
-                "media/cartooncrypteque_character_skellywithahat_idleright.bmp");
+                (cfg::ASSETS_DIR + std::string("cartooncrypteque_character_skellywithahat_idleright.bmp")).c_str());
   if (entityTexture) {
     testEntity->SetTexture(entityTexture);
   }
 
   SDL_Texture *platformTexture =
     LoadTexture(engine.GetRenderer(),
-                "media/cartooncrypteque_platform_basicground_idle.bmp");
+                (cfg::ASSETS_DIR + std::string("cartooncrypteque_platform_basicground_idle.bmp")).c_str());
   if (platformTexture) {
     platform1->SetTexture(platformTexture);
     platform2->SetTexture(platformTexture);
