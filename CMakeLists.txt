@@ -50,6 +50,7 @@ endif()
 # Define required source files
 
 set(REQUIRED_SOURCES
+    src/EntityManager.cpp
     src/main.cpp
     src/GameEngine.cpp
     src/Input.cpp
