@@ -47,6 +47,12 @@ if(NOT USE_VENDORED_SDL3)
     endif()
 endif()
 
+# execute_process(COMMAND bash third_party/libzmq/configure.ac)
+set(POLLER epoll)
+add_subdirectory(third_party/libzmq EXCLUDE_FROM_ALL)
+# add_compile_options(-DPOLLER=epoll)
+
+add_subdirectory(third_party/cppzmq EXCLUDE_FROM_ALL)
 # Define required source files
 
 set(REQUIRED_SOURCES
@@ -90,6 +96,8 @@ target_include_directories(GameEngine PRIVATE src)
 
 # Link to the actual SDL3 library
 target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
+target_link_libraries(GameEngine PRIVATE libzmq)
+target_link_libraries(GameEngine PRIVATE cppzmq)
 
 # macOS specific settings
 if(APPLE)
