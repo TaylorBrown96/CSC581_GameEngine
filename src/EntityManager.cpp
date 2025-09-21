@@ -1,5 +1,6 @@
-#include "Entity.h"
 #include <algorithm>
+
+#include "Entity.h"
 
 void EntityManager::AddEntity(Entity *entity) { entities.push_back(entity); }
 
@@ -8,6 +9,4 @@ void EntityManager::RemoveEntity(Entity *entity) {
                  entities.end());
 }
 
-void EntityManager::ClearAllEntities() {
-    entities.clear();
-}
+void EntityManager::ClearAllEntities() { entities.clear(); }

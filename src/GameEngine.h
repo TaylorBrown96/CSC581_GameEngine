@@ -1,19 +1,20 @@
 // GameEngine.h
 #pragma once
+#include <SDL3/SDL.h>
+
+#include <memory>
+
 #include "Collisions.h"
 #include "Entity.h"
 #include "Input.h"
 #include "Physics.h"
 #include "Render.h"
-#include <SDL3/SDL.h>
-#include <memory>
-
 
 // Forward declarations
 
 // Core Engine Class
 class GameEngine {
-private:
+ private:
   int winsizeX;
   int winsizeY;
   SDL_Window *window;
@@ -28,16 +29,16 @@ private:
 
   // std::vector<Entity *> entities;
 
-public:
+ public:
   GameEngine();
   ~GameEngine();
 
-  bool Initialize(const char* title, int resx, int resy);
+  bool Initialize(const char *title, int resx, int resy);
   void Run();
   void Shutdown();
-  void Render( std::vector<Entity*>&);
-  void Update(float deltaTime, std::vector<Entity*>&);
-  EntityManager* GetEntityManager() { return entityManager.get(); }
+  void Render(std::vector<Entity *> &);
+  void Update(float deltaTime, std::vector<Entity *> &);
+  EntityManager *GetEntityManager() { return entityManager.get(); }
 
   // void AddEntity(Entity *entity);
   // void RemoveEntity(Entity *entity);
@@ -47,9 +48,8 @@ public:
   CollisionSystem *GetCollision() const { return collision.get(); }
   RenderSystem *GetRenderSystem() const { return renderSystem.get(); }
   SDL_Renderer *GetRenderer() const { return renderer; }
-  
 
-private:
+ private:
   void HandleEvents();
 };
 

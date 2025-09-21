@@ -1,13 +1,14 @@
 #pragma once
 #include <SDL3/SDL.h>
+
 #include <unordered_map>
 
 class InputManager {
-private:
-  const bool *keyboardState; // SDL3 returns const bool*, not const Uint8*
+ private:
+  const bool *keyboardState;  // SDL3 returns const bool*, not const Uint8*
   std::unordered_map<SDL_Scancode, bool> previousKeyState;
 
-public:
+ public:
   InputManager();
   void Update();
 

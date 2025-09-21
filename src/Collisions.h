@@ -4,7 +4,7 @@
 #include <vector>
 
 class CollisionSystem {
-public:
+ public:
   bool CheckCollision(const Entity *a, const Entity *b) const;
   bool CheckCollision(const SDL_FRect &a, const SDL_FRect &b) const;
 
