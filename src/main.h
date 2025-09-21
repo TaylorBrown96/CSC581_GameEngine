@@ -29,6 +29,7 @@ class TestEntity : public Entity {
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
     // Update animation
+    (void) entitySpawner;
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
       currentFrame = (currentFrame + 1) % tex.num_frames_x;
@@ -124,6 +125,7 @@ class Platform : public Entity {
   void Update(float dt, InputManager *input,
               EntityManager *entitySpawner) override {
     (void)input;
+    (void)entitySpawner;
     // Horizontal-only motion for the moving platform
     position = add(position, mul(dt, velocity));
     if (position.x < 0) {
