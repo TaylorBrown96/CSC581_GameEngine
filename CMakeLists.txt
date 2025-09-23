@@ -10,10 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 
-# Option to choose between vendored SDL3 and system SDL3
-option(USE_VENDORED_SDL3 "Use vendored SDL3 library" ON)
-
-# macOS Homebrew support
 if(APPLE)
     # Add Homebrew paths for both Apple Silicon and Intel Macs
     list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew")    # Apple Silicon
@@ -23,6 +19,21 @@ if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 endif()
 
+#################
+# PACKAGES SETUP
+#################
+
+#################
+# SDL SETUP
+#################
+# Option to choose between vendored and system packages
+option(USE_VENDORED_SDL3 "Use vendored SDL3 library" ON)
+option(USE_VENDORED_ZMQ "Use vendored ZeroMQ library" ON)
+option(USE_VENDORED_CPPZMQ "Use vendored cppzmq library" ON)
+
+# macOS Homebrew support
+
+
 # SDL3 Setup
 if(USE_VENDORED_SDL3)
     # Check if vendored SDL directory exists
@@ -31,19 +42,54 @@ if(USE_VENDORED_SDL3)
         add_subdirectory(third_party/sdl EXCLUDE_FROM_ALL)
     else()
         message(WARNING "Vendored SDL3 not found at third_party/sdl, falling back to system SDL3")
-        set(USE_VENDORED_SDL3 OFF)
+        message(STATUS "Looking for system SDL3...")
+        find_package(SDL3 REQUIRED CONFIG) 
+        if(SDL3_FOUND)
+            message(STATUS "Found system SDL3 version: ${SDL3_VERSION}")
+        else()
+            message(FATAL_ERROR "SDL3 not found! Please install via Homebrew: brew install sdl3")
+        endif()
     endif()
 endif()
 
-if(NOT USE_VENDORED_SDL3)
-    # Use system-installed SDL3 (via Homebrew or other package manager)
-    message(STATUS "Looking for system SDL3...")
-    find_package(SDL3 REQUIRED CONFIG)
-    
-    if(SDL3_FOUND)
-        message(STATUS "Found system SDL3 version: ${SDL3_VERSION}")
+#################
+# ZMQ SETUP
+#################
+
+if(USE_VENDORED_ZMQ)
+    # Check if vendored SDL directory exists
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/libzmq/CMakeLists.txt")
+        message(STATUS "Using vendored ZeroMQ from third_party/libzmq")
+        set(POLLER epoll)
+        add_subdirectory(third_party/libzmq EXCLUDE_FROM_ALL)
+        
     else()
-        message(FATAL_ERROR "SDL3 not found! Please install via Homebrew: brew install sdl3")
+        message(WARNING "Vendored ZMQ not found at third_party/libzmq, falling back to system ZeroMQ")
+        message(STATUS "Looking for system ZeroMQ...")
+        find_package(ZeroMQ REQUIRED CONFIG) 
+        if(ZeroMQ_FOUND)
+            message(STATUS "Found system ZeroMQ version: ${ZeroMQ_VERSION}")
+        else()
+            message(FATAL_ERROR "ZeroMQ not found! Please install via Homebrew: brew install libzmq")
+        endif()
+    endif()
+endif()
+
+
+if(USE_VENDORED_CPPZMQ)
+    # Check if vendored SDL directory exists
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cppzmq/CMakeLists.txt")
+        message(STATUS "Using vendored cppzmq from third_party/cppzmq")
+        add_subdirectory(third_party/cppzmq EXCLUDE_FROM_ALL)
+    else()
+        message(WARNING "Vendored cppzmq not found at third_party/cppzmq, falling back to system cppzmq")
+        message(STATUS "Looking for system cppzmq...")
+        find_package(cppzmq REQUIRED CONFIG) 
+        if(cppzmq_FOUND)
+            message(STATUS "Found system cppzmq version: ${cppzmq_VERSION}")
+        else()
+            message(FATAL_ERROR "cppzmq not found! Please install via Homebrew: brew install cppzmq")
+        endif()
     endif()
 endif()
 
@@ -91,6 +137,8 @@ target_include_directories(GameEngine PRIVATE src)
 
 # Link to the actual SDL3 library
 target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
+target_link_libraries(GameEngine PRIVATE libzmq)
+target_link_libraries(GameEngine PRIVATE cppzmq)
 
 # macOS specific settings
 if(APPLE)
