@@ -36,7 +36,6 @@ public:
   bool affectedByGravity = true;
   bool isStatic = false;
   bool grounded = false;
-  bool isOneWay = false;
 
   virtual bool GetSourceRect(SDL_FRect &out) const { (void)out; return false; }
 

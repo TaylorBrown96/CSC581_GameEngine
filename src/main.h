@@ -112,7 +112,6 @@ public:
     isStatic = true;
     hasPhysics = false;
     affectedByGravity = false;
-    isOneWay = true; // <- key line
     velocity.x = moving ? -100.0f : 0.0f;
     velocity.y = 0.0f;
   }
