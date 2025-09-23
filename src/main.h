@@ -19,18 +19,13 @@ public:
     currentFrame = 0;
     lastFrameTime = 0;
     animationDelay = 200;
-
-    tex.num_frames_x = 8;
-    tex.num_frames_y = 0;
-    tex.frame_width = 512;
-    tex.frame_height = 512;
   }
 
   void Update(float deltaTime, InputManager *input) override {
     // Update animation
     lastFrameTime += (Uint32)(deltaTime * 1000); // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
-      currentFrame = (currentFrame + 1) % tex.num_frames_x;
+      currentFrame = (currentFrame + 1) % textures[currentTextureState].num_frames_x;
       lastFrameTime = 0;
     }
 
