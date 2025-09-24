@@ -1,8 +1,14 @@
 #pragma once
-#include <Input.h>
+
 #include <SDL3/SDL.h>
-#include <vec2.h>
 #include <map>
+
+#include <vector>
+
+#include "Input.h"
+#include "vec2.h"
+
+class EntityManager;
 
 typedef struct CollisionData {
   vec2 point;
@@ -10,7 +16,7 @@ typedef struct CollisionData {
 } CollisionData;
 
 typedef struct Texture {
-  SDL_Texture* sheet;
+  SDL_Texture *sheet;
   uint32_t num_frames_x;
   uint32_t num_frames_y;
   uint32_t frame_width;
@@ -18,17 +24,16 @@ typedef struct Texture {
   bool loop;
 } Texture;
 
-
 class Entity {
-private:
+ private:
   inline static int nextId =
-      0; // <-- inline variable: defined once program-wide
+      0;  // <-- inline variable: defined once program-wide
   int id;
 
-public:
+ public:
   vec2 position;
-  vec2 dimensions; //
-  vec2 velocity;   // float velocityX = 0.0f, velocityY = 0.0f;
+  vec2 dimensions;  //
+  vec2 velocity;    // float velocityX = 0.0f, velocityY = 0.0f;
   vec2 force;
 
   std::map<int, Texture> textures;
@@ -41,11 +46,16 @@ public:
   bool isStatic = false;
   bool grounded = false;
 
-  virtual bool GetSourceRect(SDL_FRect &out) const { (void)out; return false; }
+  virtual bool GetSourceRect(SDL_FRect &out) const {
+    (void)out;
+    return false;
+  }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
          float h = 32.0f)
-      : id(nextId++), position({.x = startX, .y = startY}), dimensions({.x = w, .y = h}) {
+      : id(nextId++),
+        position({.x = startX, .y = startY}),
+        dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
       force.y = 9.8 * 300.0;
     }
@@ -54,7 +64,7 @@ public:
 
   int GetId() const { return id; }
 
-  virtual void Update(float, InputManager *) {}
+  virtual void Update(float, InputManager *, EntityManager *) {}
   virtual void OnCollision(Entity *, CollisionData *) {}
 
   void SetTexture(int state, Texture *tex) {
@@ -91,4 +101,15 @@ public:
       .h = (float)(tex.frame_height)
     };  
   }
+};
+
+class EntityManager {
+  std::vector<Entity *> entities;
+
+ public:
+  EntityManager() {}
+  void AddEntity(Entity *entity);
+  void RemoveEntity(Entity *entity);
+  void ClearAllEntities();
+  std::vector<Entity *> &getEntityVectorRef() { return entities; };
 };

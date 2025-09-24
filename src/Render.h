@@ -1,21 +1,21 @@
 #pragma once
-#include "Entity.h"
 #include <SDL3/SDL.h>
 
+#include "Entity.h"
 
 enum class ScalingMode {
-  CONSTANT_SIZE, // Pixel-based
-  PROPORTIONAL   // Percentage-based
+  CONSTANT_SIZE,  // Pixel-based
+  PROPORTIONAL    // Percentage-based
 };
 
 class RenderSystem {
-private:
+ private:
   SDL_Renderer *renderer;
   ScalingMode currentMode;
-  
-  float baseWidth, baseHeight; // Reference resolution for proportional scaling
 
-public:
+  float baseWidth, baseHeight;  // Reference resolution for proportional scaling
+
+ public:
   float screenWidth, screenHeight;
 
   explicit RenderSystem(SDL_Renderer *renderer);
@@ -36,8 +36,7 @@ public:
   void Clear();
   void Present();
 
-  
-private:
+ private:
   SDL_FRect CalculateRenderRect(const Entity *entity);
 };
 
