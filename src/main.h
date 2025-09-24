@@ -19,11 +19,6 @@ class TestEntity : public Entity {
     currentFrame = 0;
     lastFrameTime = 0;
     animationDelay = 200;
-
-    tex.num_frames_x = 8;
-    tex.num_frames_y = 0;
-    tex.frame_width = 512;
-    tex.frame_height = 512;
   }
 
   void Update(float deltaTime, InputManager *input,
@@ -32,7 +27,7 @@ class TestEntity : public Entity {
     (void) entitySpawner;
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
-      currentFrame = (currentFrame + 1) % tex.num_frames_x;
+      currentFrame = (currentFrame + 1) % textures[currentTextureState].num_frames_x;
       lastFrameTime = 0;
     }
 
@@ -117,7 +112,6 @@ class Platform : public Entity {
     isStatic = true;
     hasPhysics = false;
     affectedByGravity = false;
-    isOneWay = true;  // <- key line
     velocity.x = moving ? -100.0f : 0.0f;
     velocity.y = 0.0f;
   }
