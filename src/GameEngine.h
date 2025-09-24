@@ -5,6 +5,7 @@
 #include "Input.h"
 #include "Physics.h"
 #include "Render.h"
+#include "Timeline.h"
 #include <SDL3/SDL.h>
 #include <memory>
 // #include <unordered_map>
@@ -25,6 +26,7 @@ private:
   std::unique_ptr<InputManager> input;
   std::unique_ptr<CollisionSystem> collision;
   std::unique_ptr<RenderSystem> renderSystem;
+  std::unique_ptr<Timeline> rootTimeline;
 
   std::vector<Entity *> entities;
 
@@ -48,14 +50,8 @@ public:
   RenderSystem *GetRenderSystem() const { return renderSystem.get(); }
   SDL_Renderer *GetRenderer() const { return renderer; }
 
+  Timeline *GetRootTimeline() const { return rootTimeline.get(); }
+
 private:
   void HandleEvents();
 };
-
-// Physics System
-
-// Input Manager
-
-// Collision Detection System
-
-// Render System with Scaling

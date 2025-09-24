@@ -14,7 +14,7 @@ private:
 
 public:
   
-  TestEntity(float x, float y) : Entity(x, y, 128, 128) {
+  TestEntity(float x, float y, Timeline *tl) : Entity(x, y, 128, 128, tl) {
     velocity.x = 0.0f; // Move right at 150 pixels per second
     currentFrame = 0;
     lastFrameTime = 0;
@@ -28,6 +28,7 @@ public:
 
   void Update(float deltaTime, InputManager *input) override {
     // Update animation
+    // TODO: Move to a seperate function after merging tech debt branch
     lastFrameTime += (Uint32)(deltaTime * 1000); // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
       currentFrame = (currentFrame + 1) % tex.num_frames_x;
@@ -107,8 +108,8 @@ public:
 
 class Platform : public Entity {
 public:
-  Platform(float x, float y, float w = 200, float h = 20, bool moving = false)
-      : Entity(x, y, w, h) {
+  Platform(float x, float y, float w = 200, float h = 20, Timeline *tl = nullptr, bool moving = false)
+      : Entity(x, y, w, h, tl) {
     isStatic = true;
     hasPhysics = false;
     affectedByGravity = false;

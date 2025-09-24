@@ -1,5 +1,6 @@
 #pragma once
 #include <Input.h>
+#include "Timeline.h"
 #include <SDL3/SDL.h>
 #include <vec2.h>
 
@@ -32,6 +33,8 @@ public:
   Texture tex;
   bool isVisible = true;
 
+  Timeline *timeline = nullptr;
+
   bool hasPhysics = true;
   bool affectedByGravity = true;
   bool isStatic = false;
@@ -41,11 +44,12 @@ public:
   virtual bool GetSourceRect(SDL_FRect &out) const { (void)out; return false; }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
-         float h = 32.0f)
+         float h = 32.0f, Timeline *tl = nullptr)
       : id(nextId++), position({.x = startX, .y = startY}), dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
       force.y = 9.8 * 300.0;
     }
+    timeline = tl;
     tex.sheet = nullptr;
   }
   virtual ~Entity() = default;

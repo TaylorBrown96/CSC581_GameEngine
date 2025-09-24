@@ -36,6 +36,7 @@ bool GameEngine::Initialize(const char* title, int resx, int resy) {
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
+  rootTimeline = std::make_unique<Timeline>(1.0, nullptr);
 
   running = true;
   return true;
@@ -74,6 +75,7 @@ void GameEngine::Run() {
 void GameEngine::Update(float deltaTime) {
   // Update all entities
   for (auto &entity : entities) {
+    // TODO: Figure out a way to scale the deltaTime here
     entity->Update(deltaTime, input.get());
 
     // Apply physics if entity has physics enabled
