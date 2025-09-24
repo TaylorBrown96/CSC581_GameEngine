@@ -22,9 +22,6 @@ cmake --build build --config Release
 > [!NOTE]  
 > Run this command after you clone the repo and it was not the main branch:  
 > `git submodule update --init --recursive`
-> ### Or
-> Run this command after you downloaded a zip and extracted
-> `git clone https://github.com/libsdl-org/SDL.git third_party/sdl`
 
 ---
 
