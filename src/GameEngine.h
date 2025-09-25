@@ -23,6 +23,7 @@ class GameEngine {
   SDL_Window *window;
   SDL_Renderer *renderer;
   bool running;
+  float tickRate;
 
   std::unique_ptr<PhysicsSystem> physics;
   std::unique_ptr<InputManager> input;
@@ -36,7 +37,7 @@ class GameEngine {
   GameEngine();
   ~GameEngine();
 
-  bool Initialize(const char *title, int resx, int resy);
+  bool Initialize(const char *title, int resx, int resy, float timeScale);
   void Run();
   void Shutdown();
   void Render(std::vector<Entity *> &);

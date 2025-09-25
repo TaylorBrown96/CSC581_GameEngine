@@ -5,13 +5,10 @@
 void PhysicsSystem::ApplyPhysics(Entity *entity, float deltaTime) {
   if (
       !entity->hasPhysics || 
-      entity->isStatic || 
-      entity->timeline->getState() == Timeline::State::PAUSE
+      entity->isStatic    
     )
 
     return;
-
-  deltaTime = entity->timeline->getAbsoluteScale() * deltaTime; // Apply timeline scale to deltaTime
 
   entity->velocity = add(entity->velocity, mul(deltaTime, entity->force));
 

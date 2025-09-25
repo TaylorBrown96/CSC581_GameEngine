@@ -7,22 +7,22 @@ int main(int argc, char *argv[]) {
   (void)argv;
 
   GameEngine engine;
-  if (!engine.Initialize("Game Engine", 1800, 1000)) {
+  if (!engine.Initialize("Game Engine", 1800, 1000, 1.0f)) {
     return 1;
   }
   engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
   Timeline *halfTimeline = new Timeline(0.5, engine.GetRootTimeline());
   Timeline *doubleTimeline = new Timeline(2.0, engine.GetRootTimeline());
   // Create entities
-  TestEntity *testEntity = new TestEntity(100, 100, doubleTimeline);
+  TestEntity *testEntity = new TestEntity(100, 100, halfTimeline);
   testEntity->hasPhysics = true; // Enable physics for TestEntity
 
-  Platform *platform1 = new Platform(300, 800, 300, 75, engine.GetRootTimeline(), true);
+  Platform *platform1 = new Platform(300, 800, 300, 75, halfTimeline, true);
   platform1->hasPhysics = false;        // no integration
   platform1->affectedByGravity = false; // no gravity
   platform1->isStatic = true;
 
-  Platform *platform2 = new Platform(800, 650, 300, 75, halfTimeline, true);
+  Platform *platform2 = new Platform(800, 650, 300, 75, engine.GetRootTimeline(), true);
   platform2->hasPhysics = true; // we want horizontal motion we code ourselves
   platform2->affectedByGravity = false; // but no falling
   platform2->isStatic =

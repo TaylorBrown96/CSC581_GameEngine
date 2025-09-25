@@ -31,8 +31,6 @@ option(USE_VENDORED_SDL3 "Use vendored SDL3 library" ON)
 option(USE_VENDORED_ZMQ "Use vendored ZeroMQ library" ON)
 option(USE_VENDORED_CPPZMQ "Use vendored cppzmq library" ON)
 
-# macOS Homebrew support
-
 
 # SDL3 Setup
 if(USE_VENDORED_SDL3)
@@ -147,8 +145,13 @@ if(APPLE)
     
     # Set proper install name for dynamic libraries on macOS
     set_target_properties(GameEngine PROPERTIES
-        INSTALL_RPATH "@executable_path"
+        INSTALL_RPATH "@executable_path;/opt/homebrew/lib;/usr/local/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
+    )
+    
+    # Add rpath for Homebrew libraries
+    set_target_properties(GameEngine PROPERTIES
+        INSTALL_RPATH_USE_LINK_PATH TRUE
     )
 endif()
 

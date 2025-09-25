@@ -9,14 +9,19 @@ GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize(const char *title, int resx, int resy) {
+bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale = 1.0f) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
     return false;
   }
 
-  // Create window (1920x1080 as required)
+  if(timeScale < 0.5 || timeScale > 2.0) {
+    SDL_Log("Time scale must be between 0.5 and 2.0");
+    return false;
+  }
+
+  tickRate = 60.0f * timeScale;
   winsizeX = resx;
   winsizeY = resy;
   window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
@@ -24,7 +29,6 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
     SDL_Log("Failed to create window: %s", SDL_GetError());
     return false;
   }
-
   // Create renderer
   renderer = SDL_CreateRenderer(window, nullptr);
   if (!renderer) {
@@ -37,7 +41,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
-  rootTimeline = std::make_unique<Timeline>(1.0, nullptr);
+  rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
 
   running = true;
@@ -72,21 +76,21 @@ void GameEngine::Run() {
     // Render
     Render(entities);
 
-    float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
+    float delay = std::max(0.0, 1000.0 / tickRate - deltaTime);
     SDL_Delay(delay);
   }
 }
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   // Update all entities
-
+  rootTimeline->Update(deltaTime);
   for (auto &entity : entities) {
-    // TODO: Figure out a way to scale the deltaTime here
-    entity->Update(deltaTime, input.get(), entityManager.get());
+    float entityDeltaTime = entity->timeline->getDeltaTime();
+    entity->Update(entityDeltaTime, input.get(), entityManager.get());
 
     // Apply physics if entity has physics enabled
     if (entity->hasPhysics) {
-      physics->ApplyPhysics(entity, deltaTime);
+      physics->ApplyPhysics(entity, entityDeltaTime);
     }
   }
 

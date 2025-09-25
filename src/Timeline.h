@@ -3,7 +3,7 @@
 
 class Timeline {
 public:
-    enum class State { RUN, PAUSE};
+    enum class State { RUN, PAUSE };
 
 
     Timeline(float s = 1.0f, Timeline* p = nullptr) {
@@ -16,6 +16,29 @@ public:
         if(p) {
             p->addChild(this);
         }
+    }
+
+
+    void Update(float rawDeltaTime) {
+        if(state == State::RUN) {
+            // Store the scaled delta time for this timeline
+            deltaTime = rawDeltaTime * absoluteScale;
+            elapsedTime += deltaTime;
+        } else {
+            // When paused, delta time should be 0
+            deltaTime = 0.0f;
+        }
+        
+        if(children.size() > 0) {
+            for(auto child : children) {
+                child->Update(rawDeltaTime);
+            }
+        }
+    }
+
+    
+    float getDeltaTime() {
+        return deltaTime;
     }
 
 
@@ -48,15 +71,11 @@ public:
     }
 
 
-    void switchState() {
-        if(state == State::RUN) {
-            state = State::PAUSE;
-        } else {
-            state = State::RUN;
-        }
+    void setState(State state) {
+        this->state = state;
         if(children.size() > 0) {
             for(auto child : children) {
-                child->switchState();
+                child->setState(state);
             }
         }
     }
@@ -75,6 +94,7 @@ public:
 private:
     float scale;
     float absoluteScale;
+    float deltaTime;
     Timeline* parent;
     std::vector<Timeline*> children;
     State state;

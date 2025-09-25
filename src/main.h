@@ -24,7 +24,6 @@ class TestEntity : public Entity {
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
     // Update animation
-    // TODO: Move to a seperate function after merging tech debt branch
     (void) entitySpawner;
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
@@ -42,8 +41,9 @@ class TestEntity : public Entity {
                        input->IsKeyPressed(SDL_SCANCODE_RIGHT);
 
     // carrier velocity (only meaningful when grounded on a platform)
+    // Use the platform's timeline scale, not the player's timeline scale
     const float carrierVX =
-        (grounded && groundRef) ? groundRef->velocity.x : 0.0f;
+        (grounded && groundRef) ? groundRef->velocity.x * groundRef->timeline->getAbsoluteScale() : 0.0f;
 
     // base desired velocity from input (world-space)
     float desiredVX = 0.0f;
@@ -86,6 +86,21 @@ class TestEntity : public Entity {
       groundRef = nullptr;
       groundVX = 0.0f;
     }
+    
+
+    // Handle pause toggle (only on key press, not while held)
+    static bool pKeyWasPressed = false;
+    bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
+    
+    if (pKeyIsPressed && !pKeyWasPressed) {
+      // Key was just pressed (not held)
+      if (timeline->getState() == Timeline::State::PAUSE) {
+        timeline->setState(Timeline::State::RUN);
+      } else {
+        timeline->setState(Timeline::State::PAUSE);
+      }
+    }
+    pKeyWasPressed = pKeyIsPressed;
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {
