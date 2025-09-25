@@ -3,9 +3,12 @@
 #include <SDL3/SDL.h>
 
 #include <vector>
+#include <string>
 
 #include "Input.h"
 #include "vec2.h"
+
+#include <packetdef.h>
 
 class EntityManager;
 
@@ -43,6 +46,12 @@ class Entity {
   bool grounded = false;
   bool isOneWay = false;
 
+  std::string endpoint;
+  bool is_client;
+  int8_t entity_id;
+  int8_t client_id;
+  bool registered;
+
   virtual bool GetSourceRect(SDL_FRect &out) const {
     (void)out;
     return false;
@@ -74,6 +83,25 @@ class Entity {
   inline void SetTexture(SDL_Texture *texp) { tex.sheet = texp; }
   inline SDL_Texture *GetTexture() const { return tex.sheet; }
 
+  packet_def Packetize(int packet_type) {
+    packet_def pdef;
+    pdef.packet_type = packet_type;
+    pdef.entity_id = entity_id;
+    pdef.position = position;
+    pdef.velocity = velocity;
+    pdef.force = force;
+    pdef.dimensions = dimensions;
+    return pdef;
+  }
+
+  void Unpacketize(packet_def* pdef) {
+    
+      position = pdef->position;
+      velocity = pdef->velocity;
+      force = pdef->force;
+      dimensions = pdef->dimensions;
+    
+  }
   SDL_FRect SampleTextureAt(int x, int y) const {
     return {.x = (float)(x * tex.frame_width),
             .y = (float)(y * tex.frame_height),

@@ -89,6 +89,26 @@ void RenderSystem::Clear() { SDL_RenderClear(renderer); }
 
 void RenderSystem::Present() { SDL_RenderPresent(renderer); }
 
+SDL_Texture *CreateColoredTexture(SDL_Renderer *renderer, Uint8 width, Uint8 height, Uint8 r, Uint8 g, Uint8 b) {
+SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, width, height);
+    if (!texture) {
+        SDL_Log("Failed to create colored texture: %s", SDL_GetError());
+        return nullptr;
+    }
+    
+    // Set render target to our texture
+    SDL_SetRenderTarget(renderer, texture);
+    
+    // Clear with desired color
+    SDL_SetRenderDrawColor(renderer, r, g, b, 255);
+    SDL_RenderClear(renderer);
+    
+    // Reset render target back to default
+    SDL_SetRenderTarget(renderer, nullptr);
+    
+    return texture;
+}
+
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, const char *path) {
   SDL_Surface *surface = SDL_LoadBMP(path);
   if (!surface) {

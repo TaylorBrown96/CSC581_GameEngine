@@ -127,18 +127,50 @@ set(ENGINE_HEADERS
     src/Physics.h
     src/Collisions.h
     src/Entity.h
+    src/vec2.h
 )
 
+set(
+    SERVER_SOURCES
+    src/EntityManager.cpp
+    src/GameEngine.cpp
+    src/Input.cpp
+    src/Render.cpp
+    src/Physics.cpp
+    src/Collisions.cpp
+    src/vec2.cpp
+    src/server/Server.cpp
+)
+
+set(CLIENT_SOURCES
+    src/EntityManager.cpp
+    src/GameEngine.cpp
+    src/Input.cpp
+    src/Render.cpp
+    src/Physics.cpp
+    src/Collisions.cpp
+    src/vec2.cpp
+    src/client/Client.cpp)
 # Create your game executable target
 add_executable(GameEngine ${ENGINE_SOURCES} ${ENGINE_HEADERS})
 
 # Set include directories
 target_include_directories(GameEngine PRIVATE src)
-
 # Link to the actual SDL3 library
 target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
-target_link_libraries(GameEngine PRIVATE libzmq)
-target_link_libraries(GameEngine PRIVATE cppzmq)
+
+add_executable(GameServer ${SERVER_SOURCES})
+target_include_directories(GameServer PRIVATE src)
+target_link_libraries(GameServer PRIVATE SDL3::SDL3)
+target_link_libraries(GameServer PRIVATE libzmq)
+target_link_libraries(GameServer PRIVATE cppzmq)
+
+
+add_executable(GameClient ${CLIENT_SOURCES})
+target_include_directories(GameClient PRIVATE src)
+target_link_libraries(GameClient PRIVATE SDL3::SDL3)
+target_link_libraries(GameClient PRIVATE libzmq)
+target_link_libraries(GameClient PRIVATE cppzmq)
 
 # macOS specific settings
 if(APPLE)

@@ -41,3 +41,4 @@ class RenderSystem {
 };
 
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, const char *path);
+SDL_Texture *CreateColoredTexture(SDL_Renderer *renderer, Uint8 width, Uint8 height, Uint8 r, Uint8 g, Uint8 b);
