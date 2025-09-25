@@ -1,4 +1,5 @@
 #include "Collisions.h"
+
 #include <SDL3/SDL.h>
 #include <vec2.h>
 // #include <algorithm>
@@ -16,8 +17,7 @@ bool CollisionSystem::CheckCollision(const SDL_FRect &a,
 
 void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
   for (auto &e : entities)
-    if (!e->isStatic)
-      e->grounded = false;
+    if (!e->isStatic) e->grounded = false;
 
   const size_t n = entities.size();
   for (size_t i = 0; i < n - 1; ++i) {
@@ -27,8 +27,7 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
 
       SDL_FRect Ab = A->GetBounds();
       SDL_FRect Bb = B->GetBounds();
-      if (!SDL_HasRectIntersectionFloat(&Ab, &Bb))
-        continue;
+      if (!SDL_HasRectIntersectionFloat(&Ab, &Bb)) continue;
 
       // Decide dynamic vs static priority
       Entity *dyn = (A->isStatic && !B->isStatic) ? B : A;
@@ -47,10 +46,10 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
       SDL_GetRectIntersectionFloat(&Db, &Sb, &inter);
 
       vec2 normals[4] = {
-          {1.0, 0.0},  // RIGHT
-          {-1.0, 0.0}, // LEFT
-          {0.0, 1.0},  // BOTTOM
-          {0.0, -1.0}  // TOP
+          {1.0, 0.0},   // RIGHT
+          {-1.0, 0.0},  // LEFT
+          {0.0, 1.0},   // BOTTOM
+          {0.0, -1.0}   // TOP
       };
 
       vec2 db_collision_normal, sb_collision_normal;
@@ -68,7 +67,7 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
           dyn->grounded = true;
           db_collision_normal = normals[3];
         } else {
-          //stat->grounded = true;
+          // stat->grounded = true;
           db_collision_normal = normals[2];
         }
       }
@@ -78,8 +77,8 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
       if (!dyn->isStatic && !stat->isStatic) {
         stat->position = add(stat->position, mul(minimum_penetration * 0.5f,
                                                  sb_collision_normal));
-        dyn->position = add(
-            dyn->position, mul(minimum_penetration * 0.5f, db_collision_normal));
+        dyn->position = add(dyn->position, mul(minimum_penetration * 0.5f,
+                                               db_collision_normal));
       } else {
         dyn->position =
             add(dyn->position, mul(minimum_penetration, db_collision_normal));
