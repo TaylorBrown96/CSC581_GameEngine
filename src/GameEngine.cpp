@@ -47,7 +47,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
 void GameEngine::Run() {
   SDL_Event event;
   Uint32 lastTime = SDL_GetTicks();
-  SDL_Log("Loop Start\n");
+  // SDL_Log("Loop Start\n");
   while (running) {
     // Calculate delta time
     Uint32 currentTime = SDL_GetTicks();
