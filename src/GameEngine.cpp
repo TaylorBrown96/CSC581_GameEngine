@@ -5,7 +5,7 @@
 #include <algorithm>
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
+GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), jobSystem(2) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
@@ -67,10 +67,8 @@ void GameEngine::Run() {
     }
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
-    // Update input
-    input->Update();
-
-    rootTimeline->Update(deltaTime / 1000.0);
+    // Update engine systems in parallel
+    UpdateSystemsParallel(deltaTime / 1000.0);
     // update game
     Update(deltaTime / 1000.0, entities);
 
@@ -124,6 +122,23 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
   }
 
   renderSystem->Present();
+}
+
+void GameEngine::UpdateSystemsParallel(float deltaTime) {
+  // Clear the job queue for new frame
+  jobSystem.ClearJobs();
+  
+  // Add parallel system updates
+  jobSystem.AddJob([this]() {
+    input->Update();
+  });
+  
+  jobSystem.AddJob([this, deltaTime]() {
+    rootTimeline->Update(deltaTime);
+  });
+  
+  // Execute all engine system updates in parallel
+  jobSystem.ExecuteJobs();
 }
 
 void GameEngine::Shutdown() {
