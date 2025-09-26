@@ -39,6 +39,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
   entityManager = std::make_unique<EntityManager>();
 
+  initialized = true;
   running = true;
   return true;
 }
@@ -46,7 +47,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
 void GameEngine::Run() {
   SDL_Event event;
   Uint32 lastTime = SDL_GetTicks();
-
+  SDL_Log("Loop Start\n");
   while (running) {
     // Calculate delta time
     Uint32 currentTime = SDL_GetTicks();
@@ -63,13 +64,16 @@ void GameEngine::Run() {
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
     // Update input
-    input->Update();
+    if (!input->IsDisabled())
+      input->Update();
 
     // Update game
     Update(deltaTime / 1000.0, entities);
 
     // Render
-    Render(entities);
+    
+    if (!renderSystem->IsDisabled())
+      Render(entities);
 
     float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
     SDL_Delay(delay);
@@ -80,12 +84,12 @@ void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   // Update all entities
 
   for (auto &entity : entities) {
-    entity->Update(deltaTime, input.get(), entityManager.get());
-
-    // Apply physics if entity has physics enabled
     if (entity->hasPhysics) {
       physics->ApplyPhysics(entity, deltaTime);
     }
+
+    entity->Update(deltaTime, input.get(), entityManager.get());
+    // Apply physics if entity has physics enabled    
   }
 
   // Process collisions

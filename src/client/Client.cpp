@@ -5,48 +5,111 @@
 #include <GameEngine.h>
 #include <iostream>
 
-class Client {
+
+class Client : public Entity {
     zmq::context_t con;
+
+    // sends input
     zmq::socket_t sock;
-    std::string endpoint;
+    std::string update_endpoint;
+
+    // gets update
+    zmq::socket_t upd_sock;
+    std::string input_endpoint;
+
+    std::vector<ps_packet> packQueue;
     public:
-    Client(std::string p_endpoint) {
+
+    
+    Client() : Entity() {
+        SetOverseer();
+    }
+    void initClient(std::string p_endpoint, std::string port, std::string inp_port) {
         con = zmq::context_t(1);
         sock = zmq::socket_t(con, zmq::socket_type::req);
-        endpoint = p_endpoint;
+        upd_sock = zmq::socket_t(con, zmq::socket_type::sub);
+        update_endpoint = p_endpoint + ":" + port;
+        input_endpoint = p_endpoint + ":" + inp_port;
+    
+    }
+
+    void ConnectInit(int* map_type) {
+        sock.connect(input_endpoint);
+
+        rr_packet rp;
+        rp.packet_type = P_CLIENT_HELLO;
+        
+        sendRRPacket(&rp);
+
+        rr_packet rep;
+        RecvRRPacket(&rep);
+        *map_type = rep.packet_type;
+
+        upd_sock.connect(update_endpoint);
+        char topic = P_ENTITY_UPDATE_FETCH;
+        upd_sock.setsockopt(ZMQ_SUBSCRIBE, &topic, sizeof(char));
+    }
+
+    void sendRRPacket(rr_packet* pack) {
+        zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+        memcpy(msg.data(), pack, sizeof(rr_packet));
+        sock.send(msg, zmq::send_flags::none);
+    }
+
+    void RecvRRPacket(rr_packet* pack) {
+        zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+        sock.recv(msg, zmq::recv_flags::none);
+        memcpy(pack, msg.data(), sizeof(rr_packet));
+    }
+
+    void QueueUpdatePackets() {
+        
+        while (true) {
+            
+            zmq::message_t nmsg = zmq::message_t(sizeof(ps_packet));
+            upd_sock.recv(nmsg, zmq::recv_flags::none);
+            
+            if (!upd_sock.get(zmq::sockopt::rcvmore))
+                break;
+
+            ps_packet ps;
+
+            memcpy(&ps, nmsg.data(), sizeof(ps_packet));
+            
+            if (ps.packet_type != P_STREAM_DONE)
+                packQueue.push_back(ps);    
+
+            
+        }
+    }
+
+    void ApplyQueueUpdatePacketsToState(EntityManager* em) {
+        std::vector<Entity*>& evref = em->getEntityVectorRef();
+
+        while (packQueue.size() > 0) {
+            // std::cout<<"Applying\n";
+            ps_packet pack_top = packQueue.back();
+            bool found = false;
+            for (int i = 0; i < evref.size() - 1 && !found; i++) {
+                if (evref[i]->entity_id == pack_top.entity_id) {
+                    evref[i]->Unpacketize(&pack_top);
+                    found = true;
+                }
+            }
+
+            packQueue.pop_back();
+        }
 
     }
 
-    void connect(int* map_type) {
-        sock.connect(endpoint);
-        zmq::message_t reqm(sizeof(packet_def));
-        packet_def* pd = (packet_def*)reqm.data();
-        pd->packet_type = P_CLIENT_HELLO;
-        sock.send(reqm, zmq::send_flags::none);
-
-        zmq::message_t repm(sizeof(packet_def));
-        sock.recv(repm, zmq::recv_flags::none);
-        pd = (packet_def*)repm.data();
-        *map_type = pd->packet_type;
-    }
-
-    void sendPacket(packet_def* pack) {
-        zmq::message_t reqm(sizeof(packet_def));
-        packet_def* pd = (packet_def*)reqm.data();
-        memcpy(pd, pack, sizeof(packet_def));
-        sock.send(reqm, zmq::send_flags::none);
-    }
-
-    void recvPacket(packet_def* pack) {
-        zmq::message_t repm(sizeof(packet_def));
-        sock.recv(repm, zmq::recv_flags::none);
-        memcpy(pack, (packet_def*)repm.data(), sizeof(packet_def));
+    virtual void Update(float dt, InputManager* in, EntityManager* em) override {
+        QueueUpdatePackets();
+        ApplyQueueUpdatePacketsToState(em);
     }
 
 };
 
 
-Client client("tcp://localhost:5555");
 
 class Platform : public Entity {
  public:
@@ -75,16 +138,6 @@ class Platform : public Entity {
       position.x = 1920 - dimensions.x;
       velocity.x *= -1;
     }
-
-    packet_def pdata, pdata_recv;
-    pdata = this->Packetize(P_ENTITY_UPDATE_PUT);
-    client.sendPacket(&pdata);
-    client.recvPacket(&pdata_recv); // ack
-
-    packet_def pdata_fetch = this->Packetize(P_ENTITY_UPDATE_FETCH);
-    client.sendPacket(&pdata_fetch); // req for updated pos
-    client.recvPacket(&pdata_recv); // res
-    Unpacketize(&pdata_recv);
   }
 };
 
@@ -120,21 +173,26 @@ void loadMap(GameEngine* ge, int map_type) {
     }
 }
 
+int client_main(GameEngine* eng) {
+    if (!eng->initialized)
+        return -1;
+    
+    Client* cl = new Client();
+    cl->initClient("tcp://localhost", "5555", "5556");
+    int map;
+    cl->ConnectInit(&map);
+    
+    loadMap(eng, map);
+
+    eng->GetEntityManager()->AddEntity(cl);
+    eng->Run();
+    return 1;
+}
+
 int main() {
-   
-    
-    
-    int map_index;
-
-    client.connect(&map_index);
-    
-
-    GameEngine engine;
-    if (!engine.Initialize("Game Engine", 1800, 1000)) {
-        return 1;
-    }
-
-    loadMap(&engine, map_index);
-
-    engine.Run();
+    GameEngine eng;
+    eng.Initialize("Client", 1800, 1000);
+    eng.GetInput()->enable();
+    eng.GetRenderSystem()->enable();
+    int k = client_main(&eng);
 }

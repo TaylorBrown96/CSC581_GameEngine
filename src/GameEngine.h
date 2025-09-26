@@ -30,6 +30,8 @@ class GameEngine {
   // std::vector<Entity *> entities;
 
  public:
+  bool initialized;
+  
   GameEngine();
   ~GameEngine();
 

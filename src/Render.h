@@ -10,12 +10,16 @@ enum class ScalingMode {
 
 class RenderSystem {
  private:
+  bool disabled;
   SDL_Renderer *renderer;
   ScalingMode currentMode;
 
   float baseWidth, baseHeight;  // Reference resolution for proportional scaling
 
  public:
+  void disable() {disabled = true;}
+  void enable() {disabled = false;}
+  bool IsDisabled() {return disabled;} 
   float screenWidth, screenHeight;
 
   explicit RenderSystem(SDL_Renderer *renderer);

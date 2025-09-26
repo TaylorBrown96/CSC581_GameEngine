@@ -43,8 +43,12 @@ class Entity {
   bool hasPhysics = true;
   bool affectedByGravity = true;
   bool isStatic = false;
+  bool ghost = false;
   bool grounded = false;
   bool isOneWay = false;
+
+  bool overseer; // An overseer type of entity (not visible in game but affects all other entities)
+                // for client entity
 
   std::string endpoint;
   bool is_client;
@@ -83,8 +87,16 @@ class Entity {
   inline void SetTexture(SDL_Texture *texp) { tex.sheet = texp; }
   inline SDL_Texture *GetTexture() const { return tex.sheet; }
 
-  packet_def Packetize(int packet_type) {
-    packet_def pdef;
+  void SetOverseer() {
+    overseer = true;
+    hasPhysics = false;
+    isStatic = true;
+    isVisible = false;
+    ghost = true;
+  }
+  
+  ps_packet Packetize(int packet_type) {
+    ps_packet pdef;
     pdef.packet_type = packet_type;
     pdef.entity_id = entity_id;
     pdef.position = position;
@@ -94,7 +106,7 @@ class Entity {
     return pdef;
   }
 
-  void Unpacketize(packet_def* pdef) {
+  void Unpacketize(ps_packet* pdef) {
     
       position = pdef->position;
       velocity = pdef->velocity;
