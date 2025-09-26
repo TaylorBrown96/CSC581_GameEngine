@@ -7,6 +7,7 @@
 #include "Collisions.h"
 #include "Entity.h"
 #include "Input.h"
+#include "JobSystem.h"
 #include "Physics.h"
 #include "Render.h"
 #include "Timeline.h"
@@ -31,6 +32,7 @@ class GameEngine {
   std::unique_ptr<RenderSystem> renderSystem;
   std::unique_ptr<Timeline> rootTimeline;
   std::unique_ptr<EntityManager> entityManager;
+  JobSystem jobSystem;
 
 
  public:
@@ -42,6 +44,7 @@ class GameEngine {
   void Shutdown();
   void Render(std::vector<Entity *> &);
   void Update(float deltaTime, std::vector<Entity *> &);
+  void UpdateSystemsParallel(float deltaTime);
   EntityManager *GetEntityManager() { return entityManager.get(); }
 
   // void AddEntity(Entity *entity);

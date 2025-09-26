@@ -102,6 +102,7 @@ set(REQUIRED_SOURCES
     src/Physics.cpp
     src/Collisions.cpp
     src/vec2.cpp
+    src/JobSystem.cpp
 )
 
 # Start with required sources
