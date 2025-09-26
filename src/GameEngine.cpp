@@ -37,7 +37,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   }
 
   // Initialize systems
-  physics = std::make_unique<PhysicsSystem>();
+  physics = std::make_unique<PhysicsSystem>(3);
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
@@ -70,7 +70,8 @@ void GameEngine::Run() {
     // Update input
     input->Update();
 
-    // Update game
+    rootTimeline->Update(deltaTime / 1000.0);
+    // update game
     Update(deltaTime / 1000.0, entities);
 
     // Render
@@ -83,7 +84,6 @@ void GameEngine::Run() {
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   // Update all entities
-  rootTimeline->Update(deltaTime);
   for (auto &entity : entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
     entity->Update(entityDeltaTime, input.get(), entityManager.get());
@@ -125,13 +125,6 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
 
   renderSystem->Present();
 }
-
-// void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
-
-// void GameEngine::RemoveEntity(Entity *entity) {
-//   entities.erase(std::remove(entities.begin(), entities.end(), entity),
-//                  entities.end());
-// }
 
 void GameEngine::Shutdown() {
   entityManager->ClearAllEntities();
