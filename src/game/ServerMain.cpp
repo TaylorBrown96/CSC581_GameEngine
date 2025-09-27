@@ -1,5 +1,7 @@
 #include <GameEngine.h>
 #include <engine_server/Server.h>
+#include <iostream>
+#include <SDL3/SDL_main.h>
 
 class Platform : public Entity {
  public:
@@ -79,6 +81,11 @@ int server_main(GameEngine* eng, int map_type) {
     // std::thread PubThread(&Server::PublishUpdates, &serv);
 
     eng->Run();
+
+    std::cout<<"Shutting down.\n";
+
+    delete serv;
+    eng->Shutdown();
 
 }
 

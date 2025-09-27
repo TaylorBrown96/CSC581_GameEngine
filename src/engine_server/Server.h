@@ -31,9 +31,11 @@ class Server : public Entity {
     int proc_clients;
 
     std::vector<rr_packet> inpPackets;
-    
+
     public:
 
+    ~Server();
+    
     Server(std::string p_endpoint, std::string p_port, std::string p_inp_port, int map_type) : endpoint(p_endpoint), port(p_port), inp_port(p_inp_port), loaded_map(map_type) {
         SetOverseer();
         connected_clients = 0;

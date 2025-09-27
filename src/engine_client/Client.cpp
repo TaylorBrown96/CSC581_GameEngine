@@ -6,6 +6,13 @@
 #include <iostream>
 #include <engine_client/Client.h>
 
+Client::~Client() {
+    std::cout<<"Closing.\n";
+    upd_sock.close();
+    sock.close();
+    con.close();
+}
+
 Client::Client() : Entity() {
     SetOverseer();
 }

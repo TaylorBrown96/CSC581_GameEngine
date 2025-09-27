@@ -24,6 +24,7 @@ class Client : public Entity {
     public:
 
     Client();
+    ~Client();
     void initClient(std::string p_endpoint, std::string port, std::string inp_port);
     void ConnectInit(int* map_type);
     void sendRRPacket(rr_packet* pack);

@@ -3,6 +3,13 @@
 #include <iostream>
 #define THREADS 1
 
+Server::~Server() {
+    std::cout<<"Closing.\n";
+    sock.close();
+    inp_sock.close();
+    context->close();
+}
+
 void Server::Initialize() {
     context = new zmq::context_t(THREADS);
     sock = zmq::socket_t(*context, zmq::socket_type::pub);
@@ -52,6 +59,7 @@ void Server::RecvInputOrConnectionPackets() {
                     bool recvmore = true;
 
                     while (recvmore) {
+                        std::cout<<"recv_keys\n";
                         zmq::message_t nmsg = zmq::message_t(sizeof(rr_packet));
                         inp_sock.recv(nmsg, zmq::recv_flags::none);
 

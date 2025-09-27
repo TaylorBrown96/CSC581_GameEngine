@@ -1,4 +1,5 @@
 #include <GameEngine.h>
+#include <iostream>
 #include <engine_client/Client.h>
 
 class Platform : public Entity {
@@ -82,6 +83,11 @@ int client_main(GameEngine* eng) {
     // add client to entity vector
     eng->GetEntityManager()->AddEntity(cl);
     eng->Run();
+    std::cout<<"Shutting down.\n";
+
+    // delete the client
+    delete cl;
+    eng->Shutdown();
     return 1;
 }
 
