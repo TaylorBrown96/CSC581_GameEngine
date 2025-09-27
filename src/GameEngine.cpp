@@ -54,6 +54,9 @@ void GameEngine::Run() {
     float deltaTime = (float)(currentTime - lastTime);
     lastTime = currentTime;
 
+    if (!input->IsDisabled())
+      input->PreservePrevState();
+      
     // Handle events
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT ||

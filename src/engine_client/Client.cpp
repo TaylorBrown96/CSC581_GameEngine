@@ -4,7 +4,7 @@
 #include <packetdef.h>
 #include <GameEngine.h>
 #include <iostream>
-#include <client/Client.h>
+#include <engine_client/Client.h>
 
 Client::Client() : Entity() {
     SetOverseer();
@@ -88,7 +88,50 @@ void Client::ApplyQueueUpdatePacketsToState(EntityManager* em) {
 
 }
 
+void Client::QueueInputs(InputManager* in) {
+    int nk;
+    char* kdiff = in->GetKeyDiff(&nk);
+
+    bool ready_for_recv = false;
+
+    for (int n = 0; n < nk; n++) {
+       
+        if (kdiff[n] != 0) {
+            ready_for_recv = true;
+            
+            rr_packet keypacket;
+            keypacket.packet_type = P_CLIENT_INPUT;
+            keypacket.keycode = n;
+            if (kdiff[n] == -1) {
+                keypacket.keystate = K_KEYUP;
+            }
+            else if (kdiff[n] == 1) {
+                keypacket.keystate = K_KEYDOWN;
+            }
+            inpPackets.push_back(keypacket);
+        }
+    }
+    
+    for (int k = 0; k < inpPackets.size(); k++) {
+        zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+        memcpy(msg.data(), &inpPackets[k], sizeof(rr_packet));
+        zmq::send_flags flg = zmq::send_flags::sndmore;
+        if (k == inpPackets.size() - 1)
+            flg = zmq::send_flags::none;
+        sock.send(msg, flg);
+    }
+    
+    inpPackets.clear();
+
+    if (ready_for_recv) {
+    zmq::message_t msgr = zmq::message_t(sizeof(rr_packet));
+    sock.recv(msgr, zmq::recv_flags::none);
+    }
+}
+
 void Client::Update(float dt, InputManager* in, EntityManager* em) {
+    
+    QueueInputs(in);
     QueueUpdatePackets();
     ApplyQueueUpdatePacketsToState(em);
 }

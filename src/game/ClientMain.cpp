@@ -1,5 +1,5 @@
 #include <GameEngine.h>
-#include <client/Client.h>
+#include <engine_client/Client.h>
 
 class Platform : public Entity {
  public:
@@ -85,7 +85,7 @@ int client_main(GameEngine* eng) {
     return 1;
 }
 
-int main() {
+int main(int argc, char** argv) {
     GameEngine eng;
     eng.Initialize("Client", 1800, 1000);
     eng.GetInput()->enable();

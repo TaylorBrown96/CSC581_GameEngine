@@ -1,5 +1,5 @@
 #include <GameEngine.h>
-#include <server/Server.h>
+#include <engine_server/Server.h>
 
 class Platform : public Entity {
  public:
@@ -59,7 +59,6 @@ void loadMap(GameEngine* ge, int map_type) {
                 platform2->SetTexture(platformTexture);
             }
             break;
-        
     }
 }
 
@@ -84,7 +83,7 @@ int server_main(GameEngine* eng, int map_type) {
 }
 
 
-int main() {
+int main(int argc, char** argv) {
     GameEngine eng;
     eng.Initialize("Server", 500, 500);
     server_main(&eng, P_MAP_TYPE_A);

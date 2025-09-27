@@ -9,6 +9,9 @@
 #define P_ENTITY_UPDATE_FETCH 5
 #define P_STREAM_DONE 6
 
+#define K_KEYDOWN -7
+#define K_KEYUP 7
+
 #define P_MAP_TYPE_A 10
 #define P_MAP_TYPE_B 11
 #define P_MAP_TYPE_C 12
@@ -28,6 +31,7 @@ typedef struct rr_packet {
     char entity_id;
     char client_id;
     char keycode;
+    char keystate;
     int numkeys;
 };
 
