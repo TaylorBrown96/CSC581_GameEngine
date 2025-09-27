@@ -41,7 +41,7 @@ void loadMap(GameEngine* ge, int map_type) {
             platform1->isStatic = true;
 
             Platform *platform2 = new Platform(800, 650, 300, 75, true);
-            platform1->entity_id = 102;
+            platform2->entity_id = 102;
             platform2->hasPhysics = true;  // we want horizontal motion we code ourselves
             platform2->affectedByGravity = false;  // but no falling
             platform2->isStatic = true;  // treat as static for collisions if you have special handling

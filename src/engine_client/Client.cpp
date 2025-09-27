@@ -23,7 +23,6 @@ void Client::initClient(std::string p_endpoint, std::string port, std::string in
     upd_sock = zmq::socket_t(con, zmq::socket_type::sub);
     update_endpoint = p_endpoint + ":" + port;
     input_endpoint = p_endpoint + ":" + inp_port;
-
 }
 
 void Client::ConnectInit(int* map_type) {
@@ -31,6 +30,10 @@ void Client::ConnectInit(int* map_type) {
 
     rr_packet rp;
     rp.packet_type = P_CLIENT_HELLO;
+    srand(time(0));
+    rp.client_id = rand() % 128;
+    client_id = rp.client_id;
+    rp.numkeys = numkeys;
     
     sendRRPacket(&rp);
 
@@ -78,20 +81,27 @@ void Client::QueueUpdatePackets() {
 
 void Client::ApplyQueueUpdatePacketsToState(EntityManager* em) {
     std::vector<Entity*>& evref = em->getEntityVectorRef();
+    // std::cout<<(int)packQueue.size()<<"\n";
+    for (int p = 0; p < packQueue.size(); p++) {
 
-    while (packQueue.size() > 0) {
         // std::cout<<"Applying\n";
-        ps_packet pack_top = packQueue.back();
+        ps_packet pack_top = packQueue[p];
         bool found = false;
-        for (int i = 0; i < evref.size() - 1 && !found; i++) {
+        // std::cout<<(int)pack_top.entity_id<<"\n";
+
+        for (int i = 0; (i < (int)evref.size()) && !found; i++) {
+
+            if (evref[i]->entity_id == entity_id)
+                continue;
+
             if (evref[i]->entity_id == pack_top.entity_id) {
                 evref[i]->Unpacketize(&pack_top);
                 found = true;
             }
-        }
-
-        packQueue.pop_back();
+        }    
     }
+
+    packQueue.clear();
 
 }
 
@@ -101,18 +111,21 @@ void Client::QueueInputs(InputManager* in) {
     
     int nk;
     
+    inpPackets.clear();
+
     char* kdiff = in->GetKeyDiff(&nk);
 
     bool ready_for_recv = false;
 
     for (int n = 0; n < nk; n++) {
-       
+        
         if (kdiff[n] != 0) {
             ready_for_recv = true;
             
             rr_packet keypacket;
             keypacket.packet_type = P_CLIENT_INPUT;
-            keypacket.keycode = n;
+            keypacket.client_id = client_id;
+            keypacket.keycode = (short)n;
             if (kdiff[n] == -1) {
                 keypacket.keystate = K_KEYUP;
             }
@@ -122,8 +135,11 @@ void Client::QueueInputs(InputManager* in) {
             inpPackets.push_back(keypacket);
         }
     }
+
+    // std::cout<<(int)inpPackets.size()<<"\n";
     
-    for (int k = 0; k < inpPackets.size(); k++) {
+    for (int k = 0; k < (int)inpPackets.size(); k++) {
+        // std::cout<<"Sendingp "<<(int)inpPackets[k].keycode<<" "<<(int)inpPackets[k].keystate<<"\n";
         zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
         memcpy(msg.data(), &inpPackets[k], sizeof(rr_packet));
         zmq::send_flags flg = zmq::send_flags::sndmore;

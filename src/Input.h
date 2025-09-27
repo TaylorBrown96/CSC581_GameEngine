@@ -16,7 +16,9 @@ class InputManager {
 
  public:
   InputManager();
+  InputManager(int p_nkeys);
   void PreservePrevState();
+  int Size() {return nkeys;}
   void Update();
   char* GetKeyDiff(int* npkeys);
   void disable() {disabled = true;}
@@ -25,4 +27,5 @@ class InputManager {
   bool IsKeyPressed(SDL_Scancode scancode) const;
   bool IsKeyJustPressed(SDL_Scancode scancode) const;
   bool IsKeyJustReleased(SDL_Scancode scancode) const;
+  void SetKeyUnsafe(SDL_Scancode scancode, bool b);
 };

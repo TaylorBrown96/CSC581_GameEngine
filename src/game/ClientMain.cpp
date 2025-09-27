@@ -5,17 +5,19 @@
 #include "mapdef.h"
 
 int client_main(GameEngine* eng) {
+
     if (!eng->initialized)
         return -1;
-    
+    eng->GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
     // create client
     Client* cl = new Client();
     // init client
     cl->initClient("tcp://localhost", "5555", "5556");
-
+    cl->entity_id = 2;
     int map;
     // connect client to server and get map
     cl->ConnectInit(&map);
+    cl->SetKeyboardSize(eng->GetInput()->Size());
     
     // load map
     loadMap(eng, map);

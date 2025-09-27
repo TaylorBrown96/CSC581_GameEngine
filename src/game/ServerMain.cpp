@@ -5,6 +5,22 @@
 
 #include "mapdef.h"
 
+
+class Player : public PlayerEntity {
+
+    int p = 0;
+    
+    public:
+
+    Player(float x, float y, float w, float h) : PlayerEntity(x, y, w, h) {};
+    virtual void ServerUpdate(float dt, InputManager* im, EntityManager* em) override {
+        
+        if (im->IsKeyPressed(SDL_SCANCODE_W))
+            std::cout<<"Player "<<(int)client_id<<" pressed W "<<(int)p++<<"\n";
+    } 
+
+};
+
 int server_main(GameEngine* eng, int map_type) {
     if (!eng->initialized)
         return -1;
@@ -12,8 +28,11 @@ int server_main(GameEngine* eng, int map_type) {
     eng->GetInput()->disable();
     eng->GetRenderSystem()->disable();
 
-    Server* serv = new Server("tcp://*", "5555", "5556", P_MAP_TYPE_A);
+    Server<Player>* serv = new Server<Player>("tcp://*", "5555", "5556", P_MAP_TYPE_A);
+    serv->entity_id = 1;
+    serv->SpawnPrototypeOnJoin = new Player(0, 0, 128, 128);
     serv->Initialize();
+
     loadMap(eng, map_type);
     eng->GetEntityManager()->AddEntity(serv);
     

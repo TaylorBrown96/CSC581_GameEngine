@@ -30,7 +30,7 @@ typedef struct rr_packet {
     char packet_type;
     char entity_id;
     char client_id;
-    char keycode;
+    short keycode;
     char keystate;
     int numkeys;
 };

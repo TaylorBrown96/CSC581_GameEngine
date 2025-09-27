@@ -21,10 +21,13 @@ class Client : public Entity {
     std::vector<ps_packet> packQueue;
     std::vector<rr_packet> inpPackets;
 
+    int numkeys;
+
     public:
 
     Client();
     ~Client();
+    void SetKeyboardSize(int ksize) {numkeys = ksize;} 
     void initClient(std::string p_endpoint, std::string port, std::string inp_port);
     void ConnectInit(int* map_type);
     void sendRRPacket(rr_packet* pack);

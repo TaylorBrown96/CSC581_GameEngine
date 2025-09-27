@@ -7,9 +7,33 @@ InputManager::InputManager() {
   keyboardState = SDL_GetKeyboardState(&nkeys);
   prevState = (bool*)malloc(sizeof(bool) * nkeys);
   keydiff = (char*)malloc(sizeof(char) * nkeys);
+  for (int i = 0; i < nkeys; i++) {
+    prevState[i] = keyboardState[i];
+  }
+}
+#include <iostream>
+InputManager::InputManager(int p_nkeys) {
+  std::cout<<"here 1\n";
+  nkeys = p_nkeys;
+  keyboardState = (const bool*)malloc(sizeof(bool) * nkeys);
+  bool* kstate = (bool*)keyboardState;
+  prevState = (bool*)malloc(sizeof(bool) * nkeys);
+
+  keydiff = (char*)malloc(sizeof(char) * nkeys);
+
+  for (int i = 0; i < nkeys; i++) {
+    kstate[i] = false;
+    prevState[i] = false;
+    keydiff[i] = 0;
+  }
+  
+
 }
 
 void InputManager::PreservePrevState() {
+  for (int i = 0; i < nkeys; i++) {
+    
+  }
   memcpy(prevState, keyboardState, sizeof(bool) * nkeys);
 }
 
@@ -36,4 +60,9 @@ bool InputManager::IsKeyJustPressed(SDL_Scancode scancode) const {
 
 bool InputManager::IsKeyJustReleased(SDL_Scancode scancode) const {
   return !keyboardState[scancode] && prevState[scancode];
+}
+
+void InputManager::SetKeyUnsafe(SDL_Scancode scancode, bool b) {
+  bool* k = (bool*)keyboardState;
+  k[scancode] = b;
 }
