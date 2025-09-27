@@ -128,6 +128,7 @@ set(ENGINE_HEADERS
     src/Collisions.h
     src/Entity.h
     src/vec2.h
+    src/packetdef.h
 )
 
 set(
@@ -139,7 +140,8 @@ set(
     src/Physics.cpp
     src/Collisions.cpp
     src/vec2.cpp
-    src/server/Server.cpp
+    src/engine_server/Server.cpp
+    src/game/ServerMain.cpp
 )
 
 set(CLIENT_SOURCES
@@ -150,7 +152,8 @@ set(CLIENT_SOURCES
     src/Physics.cpp
     src/Collisions.cpp
     src/vec2.cpp
-    src/client/Client.cpp)
+    src/engine_client/Client.cpp
+    src/game/ClientMain.cpp)
 # Create your game executable target
 add_executable(GameEngine ${ENGINE_SOURCES} ${ENGINE_HEADERS})
 

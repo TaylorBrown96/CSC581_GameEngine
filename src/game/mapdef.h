@@ -1,52 +1,5 @@
-
-#include <zmq.hpp>
-
-#include <packetdef.h>
+#pragma once
 #include <GameEngine.h>
-#include <iostream>
-
-class Client {
-    zmq::context_t con;
-    zmq::socket_t sock;
-    std::string endpoint;
-    public:
-    Client(std::string p_endpoint) {
-        con = zmq::context_t(1);
-        sock = zmq::socket_t(con, zmq::socket_type::req);
-        endpoint = p_endpoint;
-
-    }
-
-    void connect(int* map_type) {
-        sock.connect(endpoint);
-        zmq::message_t reqm(sizeof(packet_def));
-        packet_def* pd = (packet_def*)reqm.data();
-        pd->packet_type = P_CLIENT_HELLO;
-        sock.send(reqm, zmq::send_flags::none);
-
-        zmq::message_t repm(sizeof(packet_def));
-        sock.recv(repm, zmq::recv_flags::none);
-        pd = (packet_def*)repm.data();
-        *map_type = pd->packet_type;
-    }
-
-    void sendPacket(packet_def* pack) {
-        zmq::message_t reqm(sizeof(packet_def));
-        packet_def* pd = (packet_def*)reqm.data();
-        memcpy(pd, pack, sizeof(packet_def));
-        sock.send(reqm, zmq::send_flags::none);
-    }
-
-    void recvPacket(packet_def* pack) {
-        zmq::message_t repm(sizeof(packet_def));
-        sock.recv(repm, zmq::recv_flags::none);
-        memcpy(pack, (packet_def*)repm.data(), sizeof(packet_def));
-    }
-
-};
-
-
-Client client("tcp://localhost:5555");
 
 class Platform : public Entity {
  public:
@@ -75,16 +28,6 @@ class Platform : public Entity {
       position.x = 1920 - dimensions.x;
       velocity.x *= -1;
     }
-
-    packet_def pdata, pdata_recv;
-    pdata = this->Packetize(P_ENTITY_UPDATE_PUT);
-    client.sendPacket(&pdata);
-    client.recvPacket(&pdata_recv); // ack
-
-    packet_def pdata_fetch = this->Packetize(P_ENTITY_UPDATE_FETCH);
-    client.sendPacket(&pdata_fetch); // req for updated pos
-    client.recvPacket(&pdata_recv); // res
-    Unpacketize(&pdata_recv);
   }
 };
 
@@ -118,23 +61,4 @@ void loadMap(GameEngine* ge, int map_type) {
             break;
         
     }
-}
-
-int main() {
-   
-    
-    
-    int map_index;
-
-    client.connect(&map_index);
-    
-
-    GameEngine engine;
-    if (!engine.Initialize("Game Engine", 1800, 1000)) {
-        return 1;
-    }
-
-    loadMap(&engine, map_index);
-
-    engine.Run();
 }

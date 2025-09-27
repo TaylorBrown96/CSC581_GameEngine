@@ -21,12 +21,19 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
 
   const size_t n = entities.size();
   for (size_t i = 0; i < n - 1; ++i) {
-    for (size_t j = i + 1; j < n; ++j) {
-      Entity *A = entities[i];
-      Entity *B = entities[j];
 
+    Entity *A = entities[i];
+    if (A->ghost) // if a is a ghost it wont collide with any entities
+      continue;
+
+    for (size_t j = i + 1; j < n; ++j) {
+      Entity *B = entities[j];
+      if (B->ghost) // if b is a ghost it wont collide with a
+        continue;
+      
       SDL_FRect Ab = A->GetBounds();
       SDL_FRect Bb = B->GetBounds();
+
       if (!SDL_HasRectIntersectionFloat(&Ab, &Bb)) continue;
 
       // Decide dynamic vs static priority

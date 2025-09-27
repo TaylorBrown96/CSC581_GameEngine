@@ -10,6 +10,9 @@ int main(int argc, char *argv[]) {
   if (!engine.Initialize("Game Engine", 1800, 1000)) {
     return 1;
   }
+  engine.GetRenderSystem()->enable();
+  engine.GetInput()->enable();
+  
   engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
 
   // Create entities
