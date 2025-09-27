@@ -45,6 +45,7 @@ void Server::RecvInputOrConnectionPackets() {
                 rr_packet pushb;
                 memcpy(&pushb, p_request, sizeof(rr_packet));
                 inpPackets.push_back(pushb);
+                std::cout<<(int)pushb.keycode<<" "<<(int)pushb.keystate<<"\n";
 
                 if (inp_sock.get(zmq::sockopt::rcvmore)) {
                     

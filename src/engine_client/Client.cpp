@@ -89,7 +89,11 @@ void Client::ApplyQueueUpdatePacketsToState(EntityManager* em) {
 }
 
 void Client::QueueInputs(InputManager* in) {
+    // this sends key presses in the form of key updates
+    // i.e. if the W key is just pressed it will send a packet with the W scancode and status K_KEYDOWN
+    
     int nk;
+    
     char* kdiff = in->GetKeyDiff(&nk);
 
     bool ready_for_recv = false;
@@ -124,14 +128,18 @@ void Client::QueueInputs(InputManager* in) {
     inpPackets.clear();
 
     if (ready_for_recv) {
-    zmq::message_t msgr = zmq::message_t(sizeof(rr_packet));
-    sock.recv(msgr, zmq::recv_flags::none);
+        zmq::message_t msgr = zmq::message_t(sizeof(rr_packet));
+        sock.recv(msgr, zmq::recv_flags::none);
     }
 }
 
 void Client::Update(float dt, InputManager* in, EntityManager* em) {
-    
+    // Queue up inputs from the client and send to server (should move into separate thread? unlikely tbh)
     QueueInputs(in);
+
+    // Queue up packets from server
     QueueUpdatePackets();
+
+    // apply packets gathered from server
     ApplyQueueUpdatePacketsToState(em);
 }

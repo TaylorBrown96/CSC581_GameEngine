@@ -28,7 +28,7 @@ class Client : public Entity {
     void ConnectInit(int* map_type);
     void sendRRPacket(rr_packet* pack);
     void RecvRRPacket(rr_packet* pack);
-    void Client::QueueInputs(InputManager* in);
+    void QueueInputs(InputManager* in);
     void QueueUpdatePackets();
     void ApplyQueueUpdatePacketsToState(EntityManager* em);
     virtual void Update(float dt, InputManager* in, EntityManager* em) override;
