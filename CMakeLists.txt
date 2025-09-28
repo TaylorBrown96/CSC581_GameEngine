@@ -97,6 +97,8 @@ set(REQUIRED_SOURCES
     src/EntityManager.cpp
     src/main.cpp
     src/GameEngine.cpp
+    src/GameServer.cpp
+    src/GameClient.cpp
     src/Input.cpp
     src/Render.cpp
     src/Physics.cpp
@@ -121,6 +123,8 @@ endforeach()
 # Define header files (for IDE organization)
 set(ENGINE_HEADERS
     src/GameEngine.h
+    src/GameServer.h
+    src/GameClient.h
     src/Input.h
     src/Render.h
     src/Physics.h
@@ -138,6 +142,24 @@ target_include_directories(GameEngine PRIVATE src)
 target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
 target_link_libraries(GameEngine PRIVATE libzmq)
 target_link_libraries(GameEngine PRIVATE cppzmq)
+
+# Create GameServer executable (excluding main.cpp to avoid duplicate main function)
+set(SERVER_SOURCES ${ENGINE_SOURCES})
+list(REMOVE_ITEM SERVER_SOURCES src/main.cpp)
+add_executable(GameServer src/server_main.cpp ${SERVER_SOURCES} ${ENGINE_HEADERS})
+target_include_directories(GameServer PRIVATE src)
+target_link_libraries(GameServer PRIVATE SDL3::SDL3)
+target_link_libraries(GameServer PRIVATE libzmq)
+target_link_libraries(GameServer PRIVATE cppzmq)
+
+# Create GameClient executable (excluding main.cpp to avoid duplicate main function)
+set(CLIENT_SOURCES ${ENGINE_SOURCES})
+list(REMOVE_ITEM CLIENT_SOURCES src/main.cpp)
+add_executable(GameClient src/client_main.cpp ${CLIENT_SOURCES} ${ENGINE_HEADERS})
+target_include_directories(GameClient PRIVATE src)
+target_link_libraries(GameClient PRIVATE SDL3::SDL3)
+target_link_libraries(GameClient PRIVATE libzmq)
+target_link_libraries(GameClient PRIVATE cppzmq)
 
 # macOS specific settings
 if(APPLE)
