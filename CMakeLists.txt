@@ -93,6 +93,7 @@ endif()
 
 # Define required source files
 
+# ---------- ENGINE SOURCES ----------
 set(REQUIRED_SOURCES
     src/EntityManager.cpp
     src/main.cpp
@@ -107,7 +108,6 @@ set(REQUIRED_SOURCES
     src/JobSystem.cpp
 )
 
-# Start with required sources
 set(ENGINE_SOURCES ${REQUIRED_SOURCES})
 
 # Add optional sources if they exist
@@ -120,7 +120,6 @@ foreach(SOURCE_FILE ${OPTIONAL_SOURCES})
     endif()
 endforeach()
 
-# Define header files (for IDE organization)
 set(ENGINE_HEADERS
     src/GameEngine.h
     src/GameServer.h
@@ -132,34 +131,53 @@ set(ENGINE_HEADERS
     src/Entity.h
 )
 
-# Create your game executable target
-add_executable(GameEngine ${ENGINE_SOURCES} ${ENGINE_HEADERS})
+# ---------- FACTOR INTO A REUSABLE LIB ----------
+set(CORE_SOURCES ${ENGINE_SOURCES})
+list(REMOVE_ITEM CORE_SOURCES src/main.cpp)
 
-# Set include directories
+add_library(EngineCore STATIC
+    ${CORE_SOURCES}
+    ${ENGINE_HEADERS}
+)
+target_include_directories(EngineCore PUBLIC src)
+target_link_libraries(EngineCore PUBLIC SDL3::SDL3 libzmq cppzmq)
+
+# ---------- EXECUTABLES THAT LINK THE CORE ----------
+# GameEngine app: main() only; link the core
+add_executable(GameEngine src/main.cpp)
 target_include_directories(GameEngine PRIVATE src)
+target_link_libraries(GameEngine PRIVATE EngineCore)
 
-# Link to the actual SDL3 library
-target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
-target_link_libraries(GameEngine PRIVATE libzmq)
-target_link_libraries(GameEngine PRIVATE cppzmq)
-
-# Create GameServer executable (excluding main.cpp to avoid duplicate main function)
-set(SERVER_SOURCES ${ENGINE_SOURCES})
-list(REMOVE_ITEM SERVER_SOURCES src/main.cpp)
-add_executable(GameServer src/server_main.cpp ${SERVER_SOURCES} ${ENGINE_HEADERS})
+# GameServer app
+add_executable(GameServer src/server_main.cpp)
 target_include_directories(GameServer PRIVATE src)
-target_link_libraries(GameServer PRIVATE SDL3::SDL3)
-target_link_libraries(GameServer PRIVATE libzmq)
-target_link_libraries(GameServer PRIVATE cppzmq)
+target_link_libraries(GameServer PRIVATE EngineCore)
 
-# Create GameClient executable (excluding main.cpp to avoid duplicate main function)
-set(CLIENT_SOURCES ${ENGINE_SOURCES})
-list(REMOVE_ITEM CLIENT_SOURCES src/main.cpp)
-add_executable(GameClient src/client_main.cpp ${CLIENT_SOURCES} ${ENGINE_HEADERS})
+# GameClient app
+add_executable(GameClient src/client_main.cpp)
 target_include_directories(GameClient PRIVATE src)
-target_link_libraries(GameClient PRIVATE SDL3::SDL3)
-target_link_libraries(GameClient PRIVATE libzmq)
-target_link_libraries(GameClient PRIVATE cppzmq)
+target_link_libraries(GameClient PRIVATE EngineCore)
+
+# ---------- P2P TEMPLATE + DEMO ----------
+add_library(P2PTemplate STATIC
+    src/p2p/P2PTracker.cpp src/p2p/P2PTracker.h
+    src/p2p/P2PNode.cpp    src/p2p/P2PNode.h
+)
+target_include_directories(P2PTemplate PUBLIC src)
+target_link_libraries(P2PTemplate PUBLIC SDL3::SDL3 libzmq cppzmq)
+
+add_executable(P2PTrackerExe
+    src/p2p/tracker_main.cpp
+)
+target_include_directories(P2PTrackerExe PRIVATE src)
+target_link_libraries(P2PTrackerExe PRIVATE P2PTemplate)
+
+add_executable(P2PDemoPong
+    src/p2pPongDemo/p2p_pong_demo_main.cpp
+    src/p2pPongDemo/PongDemo.cpp src/p2pPongDemo/PongDemo.h
+)
+target_include_directories(P2PDemoPong PRIVATE src)
+target_link_libraries(P2PDemoPong PRIVATE EngineCore P2PTemplate)
 
 # macOS specific settings
 if(APPLE)
