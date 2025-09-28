@@ -5,18 +5,23 @@
 #include <algorithm>
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
+GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), jobSystem(2) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize(const char *title, int resx, int resy) {
+bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale = 1.0f) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
     return false;
   }
 
-  // Create window (1920x1080 as required)
+  if(timeScale < 0.5 || timeScale > 2.0) {
+    SDL_Log("Time scale must be between 0.5 and 2.0");
+    return false;
+  }
+
+  tickRate = 60.0f * timeScale;
   winsizeX = resx;
   winsizeY = resy;
   window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
@@ -24,7 +29,6 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
     SDL_Log("Failed to create window: %s", SDL_GetError());
     return false;
   }
-
   // Create renderer
   renderer = SDL_CreateRenderer(window, nullptr);
   if (!renderer) {
@@ -33,10 +37,11 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
   }
 
   // Initialize systems
-  physics = std::make_unique<PhysicsSystem>();
+  physics = std::make_unique<PhysicsSystem>(3);
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
+  rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
 
   running = true;
@@ -62,29 +67,28 @@ void GameEngine::Run() {
     }
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
-    // Update input
-    input->Update();
-
-    // Update game
+    // Update engine systems in parallel
+    UpdateSystemsParallel(deltaTime / 1000.0);
+    // update game
     Update(deltaTime / 1000.0, entities);
 
     // Render
     Render(entities);
 
-    float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
+    float delay = std::max(0.0, 1000.0 / tickRate - deltaTime);
     SDL_Delay(delay);
   }
 }
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   // Update all entities
-
   for (auto &entity : entities) {
-    entity->Update(deltaTime, input.get(), entityManager.get());
+    float entityDeltaTime = entity->timeline->getDeltaTime();
+    entity->Update(entityDeltaTime, input.get(), entityManager.get());
 
     // Apply physics if entity has physics enabled
     if (entity->hasPhysics) {
-      physics->ApplyPhysics(entity, deltaTime);
+      physics->ApplyPhysics(entity, entityDeltaTime);
     }
   }
 
@@ -120,12 +124,22 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
   renderSystem->Present();
 }
 
-// void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
-
-// void GameEngine::RemoveEntity(Entity *entity) {
-//   entities.erase(std::remove(entities.begin(), entities.end(), entity),
-//                  entities.end());
-// }
+void GameEngine::UpdateSystemsParallel(float deltaTime) {
+  // Clear the job queue for new frame
+  jobSystem.ClearJobs();
+  
+  // Add parallel system updates
+  jobSystem.AddJob([this]() {
+    input->Update();
+  });
+  
+  jobSystem.AddJob([this, deltaTime]() {
+    rootTimeline->Update(deltaTime);
+  });
+  
+  // Execute all engine system updates in parallel
+  jobSystem.ExecuteJobs();
+}
 
 void GameEngine::Shutdown() {
   entityManager->ClearAllEntities();

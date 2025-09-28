@@ -14,7 +14,7 @@ class TestEntity : public Entity {
   float groundVX = 0.0f;        // platform's current x velocity
 
  public:
-  TestEntity(float x, float y) : Entity(x, y, 128, 128) {
+  TestEntity(float x, float y, Timeline *tl) : Entity(x, y, 128, 128, tl) {
     velocity.x = 0.0f;  // Move right at 150 pixels per second
     currentFrame = 0;
     lastFrameTime = 0;
@@ -41,6 +41,7 @@ class TestEntity : public Entity {
                        input->IsKeyPressed(SDL_SCANCODE_RIGHT);
 
     // carrier velocity (only meaningful when grounded on a platform)
+    // Use the platform's timeline scale, not the player's timeline scale
     const float carrierVX =
         (grounded && groundRef) ? groundRef->velocity.x : 0.0f;
 
@@ -85,6 +86,21 @@ class TestEntity : public Entity {
       groundRef = nullptr;
       groundVX = 0.0f;
     }
+    
+
+    // Handle pause toggle (only on key press, not while held)
+    static bool pKeyWasPressed = false;
+    bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
+    
+    if (pKeyIsPressed && !pKeyWasPressed) {
+      // Key was just pressed (not held)
+      if (timeline->getState() == Timeline::State::PAUSE) {
+        timeline->setState(Timeline::State::RUN);
+      } else {
+        timeline->setState(Timeline::State::PAUSE);
+      }
+    }
+    pKeyWasPressed = pKeyIsPressed;
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {
@@ -106,9 +122,9 @@ class TestEntity : public Entity {
 };
 
 class Platform : public Entity {
- public:
-  Platform(float x, float y, float w = 200, float h = 20, bool moving = false)
-      : Entity(x, y, w, h) {
+public:
+  Platform(float x, float y, float w = 200, float h = 20, Timeline *tl = nullptr, bool moving = false)
+      : Entity(x, y, w, h, tl) {
     isStatic = true;
     hasPhysics = false;
     affectedByGravity = false;
