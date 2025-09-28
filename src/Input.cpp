@@ -3,7 +3,7 @@
 // SDL3: SDL_GetKeyboardState returns const bool*
 // keyboardState points to SDL's internal array for the *current* frame.
 InputManager::InputManager() {
-  
+
   keyboardState = SDL_GetKeyboardState(&nkeys);
   prevState = (bool*)malloc(sizeof(bool) * nkeys);
   keydiff = (char*)malloc(sizeof(char) * nkeys);
@@ -26,13 +26,13 @@ InputManager::InputManager(int p_nkeys) {
     prevState[i] = false;
     keydiff[i] = 0;
   }
-  
+  std::cout<<(int)nkeys<<" "<<(int)SDL_SCANCODE_W<<"\n";
 
 }
 
 void InputManager::PreservePrevState() {
   for (int i = 0; i < nkeys; i++) {
-    
+
   }
   memcpy(prevState, keyboardState, sizeof(bool) * nkeys);
 }

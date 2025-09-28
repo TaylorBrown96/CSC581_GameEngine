@@ -9,40 +9,10 @@
 // #include <vec2.h>
 // #include <vector>
 #include <packetdef.h>
+#include <playerEntity.h>
 #include <GameEngine.h>
 
-
 #define THREADS 1
-
-
-class PlayerEntity : public Entity {
-    InputManager* virtualInputManager = nullptr;
-public:
-    InputManager* getVirtInputManager() {
-        return virtualInputManager;
-    }
-    
-    // PlayerEntity(PlayerEntity* other) = default;
-
-    PlayerEntity(float x, float y, float w, float h) : Entity(x, y, w, h) {
-        
-        // virtualInputManager = new InputManager(keys);
-    }
-
-    virtual void ServerUpdate(float dt, InputManager* in, EntityManager* en) {
-    }
-    virtual void Update(float dt, InputManager* in, EntityManager* en) override {
-        ServerUpdate(dt, virtualInputManager, en);
-    }
-    
-    void SetNumKeys(int numkeys) {
-        if (virtualInputManager) {
-            delete(virtualInputManager);
-            virtualInputManager = nullptr;
-        }
-        virtualInputManager = new InputManager(numkeys);
-    }
-};
 
 template <typename PlayerType>
 class Server : public Entity {
@@ -60,6 +30,8 @@ class Server : public Entity {
     
     int connected_clients;
     int proc_clients;
+
+    bool skipFrame = true;
 
     std::vector<rr_packet> inpPackets;
 
@@ -106,20 +78,25 @@ class Server : public Entity {
             if (p_request->packet_type == P_CLIENT_HELLO) {
                 
                 PlayerType* newplayer = new PlayerType(*SpawnPrototypeOnJoin);
+                
                 if (dynamic_cast<PlayerEntity*>(newplayer)) {
-                    
                     newplayer->client_id = p_request->client_id;
                     
+                    newplayer->OnServer = true;
+
                     newplayer->SetNumKeys(p_request->numkeys);
+
                     
                     em->AddEntity(newplayer);
                     
                     playerVector.push_back(newplayer);
                     
                     numConnectedPlayers = playerVector.size();
+
                 }
                 // std::cout<<"B\n";
                 // send map to the client
+                
                 
                 zmq::message_t rep(sizeof(rr_packet));
                 rr_packet* rp = (rr_packet*)rep.data();
@@ -132,6 +109,7 @@ class Server : public Entity {
 
             if (p_request->packet_type == P_CLIENT_INPUT) {
                 
+        
             
                 // queue up input packets
                 rr_packet pushb;
@@ -144,7 +122,7 @@ class Server : public Entity {
                     
                     bool recvmore = true;
 
-                    while (recvmore) {
+                    while (recvmore ) {
                         // std::cout<<"recv_keys\n";
                         zmq::message_t nmsg = zmq::message_t(sizeof(rr_packet));
                         inp_sock.recv(nmsg, zmq::recv_flags::none);
@@ -164,6 +142,27 @@ class Server : public Entity {
                 zmq::message_t rep = zmq::message_t(sizeof(rr_packet));
                 rr_packet* p = (rr_packet*)rep.data();
                 p->packet_type = 0;
+                inp_sock.send(rep, zmq::send_flags::none);
+            }
+
+            if (p_request->packet_type == P_DISCONNECT) {
+                // remove player entity
+                int idx = 0;
+                for (int i = 0; i < playerVector.size(); i++) {
+                    if (playerVector[i]->client_id == p_request->client_id) {
+                        idx = i;
+                        em->RemoveEntity(playerVector[i]);
+                    }
+                }
+                
+                playerVector.erase(std::remove(playerVector.begin(), playerVector.end(), playerVector[idx]),
+                playerVector.end());
+                std::cout<<(int)playerVector.size()<<"\n";
+
+                // reflect the message
+                zmq::message_t rep = zmq::message_t(sizeof(rr_packet));
+                rr_packet* p = (rr_packet*)rep.data();
+                p->packet_type = P_DISCONNECT;
                 inp_sock.send(rep, zmq::send_flags::none);
             }
         }
@@ -191,39 +190,45 @@ class Server : public Entity {
         ps_packet* data = (ps_packet*)end_packet.data();
         data->packet_type = P_STREAM_DONE;
         sock.send(end_packet, zmq::send_flags::none);
-    
     }
     
     
     // template <typename PlayerType>
     virtual void Update(float dt, InputManager* im, EntityManager* em) override {
-        for (int i  = 0; i < numConnectedPlayers; i++) {
-            playerVector[i]->getVirtInputManager()->PreservePrevState();
-        }
+        
+        
+        
+            for (int i  = 0; i < numConnectedPlayers; i++) {
+                playerVector[i]->getVirtInputManager()->PreservePrevState();
+            }
+        
 
         RecvInputOrConnectionPackets(em);
         PublishUpdates(em);
 
-        for (int p = 0; p < (int)inpPackets.size(); p++) {
         
-            rr_packet top = inpPackets[p];
-            for (int i = 0; i < numConnectedPlayers; i++) {
-                // std::cout<<(int)inpPackets.size()<<" "<<(int)i<<" "<<(int)numConnectedPlayers<<" "<<(int)playerVector[i]->client_id<<" "<<(int)top.client_id<<"\n"; 
+            for (int p = 0; p < (int)inpPackets.size(); p++) {
+            
+                rr_packet top = inpPackets[p];
+                for (int i = 0; i < numConnectedPlayers; i++) {
+                    // std::cout<<(int)inpPackets.size()<<" "<<(int)i<<" "<<(int)numConnectedPlayers<<" "<<(int)playerVector[i]->client_id<<" "<<(int)top.client_id<<"\n"; 
 
-                if (playerVector[i]->client_id == top.client_id) {
-                    // std::cout<<"In here "<<(int)numConnectedPlayers<<"\n"; 
-                    if (top.keystate == K_KEYDOWN) {
-                        playerVector[i]->getVirtInputManager()->SetKeyUnsafe((SDL_Scancode)top.keycode, true);
-                        
-                    }
-                    else if (top.keystate == K_KEYUP) {
-                        playerVector[i]->getVirtInputManager()->SetKeyUnsafe((SDL_Scancode)top.keycode, false);
+                    if (playerVector[i]->client_id == top.client_id) {
+                        // std::cout<<"In here "<<(int)numConnectedPlayers<<"\n"; 
+                        if (top.keystate == K_KEYDOWN) {
+                            playerVector[i]->getVirtInputManager()->SetKeyUnsafe((SDL_Scancode)top.keycode, true);
+                            
+                        }
+                        else if (top.keystate == K_KEYUP) {
+                            playerVector[i]->getVirtInputManager()->SetKeyUnsafe((SDL_Scancode)top.keycode, false);
+                        }
                     }
                 }
             }
-        }
+            inpPackets.clear();
+        
 
-        inpPackets.clear();
+        
     }
 
 };

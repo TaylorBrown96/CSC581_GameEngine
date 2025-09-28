@@ -114,6 +114,7 @@ class Entity {
       dimensions = pdef->dimensions;
     
   }
+  
   SDL_FRect SampleTextureAt(int x, int y) const {
     return {.x = (float)(x * tex.frame_width),
             .y = (float)(y * tex.frame_height),

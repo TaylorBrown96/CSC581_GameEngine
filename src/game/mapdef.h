@@ -1,5 +1,25 @@
 #pragma once
 #include <GameEngine.h>
+#include <PlayerEntity.h>
+
+class Skelly : public PlayerEntity {
+
+    int currentFrame;
+    Uint32 lastFrameTime;
+    int animationDelay;
+
+    Entity *groundRef = nullptr;  // platform we're standing on (if any)
+    float groundVX = 0.0f;   
+
+    public:
+
+    Skelly(float x, float y, float w, float h) : PlayerEntity(x, y, w, h) {};
+
+    virtual void ServerUpdate(float dt, InputManager* input, EntityManager* em) override {
+      if (input->IsKeyPressed(SDL_SCANCODE_W))
+        std::cout<<"W pressed by "<<(int)client_id<<"\n"; 
+    } 
+};
 
 class Platform : public Entity {
  public:

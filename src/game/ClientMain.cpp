@@ -16,18 +16,21 @@ int client_main(GameEngine* eng) {
     cl->entity_id = 2;
     int map;
     // connect client to server and get map
-    cl->ConnectInit(&map);
     cl->SetKeyboardSize(eng->GetInput()->Size());
+    cl->ConnectInit(&map);
+    
     
     // load map
     loadMap(eng, map);
 
     // add client to entity vector
     eng->GetEntityManager()->AddEntity(cl);
+
     eng->Run();
     std::cout<<"Shutting down.\n";
 
     // delete the client
+    cl->Disconnect();
     delete cl;
     eng->Shutdown();
     return 1;

@@ -9,6 +9,8 @@
 #define P_ENTITY_UPDATE_FETCH 5
 #define P_STREAM_DONE 6
 
+#define P_DISCONNECT 9
+
 #define K_KEYDOWN -7
 #define K_KEYUP 7
 

@@ -25,16 +25,185 @@ class Client : public Entity {
 
     public:
 
-    Client();
-    ~Client();
+    ~Client() {
+        std::cout<<"Closing.\n";
+        upd_sock.close();
+        sock.close();
+        con.close();
+    }
+
+    Client() : Entity() {
+        SetOverseer();
+    }
+
     void SetKeyboardSize(int ksize) {numkeys = ksize;} 
-    void initClient(std::string p_endpoint, std::string port, std::string inp_port);
-    void ConnectInit(int* map_type);
-    void sendRRPacket(rr_packet* pack);
-    void RecvRRPacket(rr_packet* pack);
-    void QueueInputs(InputManager* in);
-    void QueueUpdatePackets();
-    void ApplyQueueUpdatePacketsToState(EntityManager* em);
-    virtual void Update(float dt, InputManager* in, EntityManager* em) override;
+
+    void initClient(std::string p_endpoint, std::string port, std::string inp_port) {
+        con = zmq::context_t(1);
+        sock = zmq::socket_t(con, zmq::socket_type::req);
+        upd_sock = zmq::socket_t(con, zmq::socket_type::sub);
+        update_endpoint = p_endpoint + ":" + port;
+        input_endpoint = p_endpoint + ":" + inp_port;
+    }
+
+    void ConnectInit(int* map_type) {
+
+        sock.connect(input_endpoint);
+
+        rr_packet rp;
+        rp.packet_type = P_CLIENT_HELLO;
+
+        srand(time(0));
+        rp.client_id = rand() % 128;
+        client_id = rp.client_id;
+        rp.numkeys = numkeys;
+        
+        sendRRPacket(&rp);
+
+        rr_packet rep;
+        RecvRRPacket(&rep);
+        *map_type = rep.packet_type;
+
+        upd_sock.connect(update_endpoint);
+        char topic = P_ENTITY_UPDATE_FETCH;
+        upd_sock.setsockopt(ZMQ_SUBSCRIBE, &topic, sizeof(char));
+    }
+
+    void Disconnect() {
+        rr_packet rp;
+        rp.packet_type = P_DISCONNECT;
+        rp.client_id = client_id;
+
+        sendRRPacket(&rp);
+
+        rr_packet rep;
+        RecvRRPacket(&rep);
+    }
+
+    void sendRRPacket(rr_packet* pack) {
+        zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+        memcpy(msg.data(), pack, sizeof(rr_packet));
+        sock.send(msg, zmq::send_flags::none);
+    }
+
+
+    void RecvRRPacket(rr_packet* pack) {
+        zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+        sock.recv(msg, zmq::recv_flags::none);
+        memcpy(pack, msg.data(), sizeof(rr_packet));
+    }
+
+
+    void QueueInputs(InputManager* in) {
+        // this sends key presses in the form of key updates
+        // i.e. if the W key is just pressed it will send a packet with the W scancode and status K_KEYDOWN
+        
+        int nk;
+        
+        inpPackets.clear();
+
+        char* kdiff = in->GetKeyDiff(&nk);
+
+        bool ready_for_recv = false;
+
+        for (int n = 0; n < nk; n++) {
+            
+            if (kdiff[n] != 0) {
+                ready_for_recv = true;
+                
+                rr_packet keypacket;
+                keypacket.packet_type = P_CLIENT_INPUT;
+                keypacket.client_id = client_id;
+                keypacket.keycode = (short)n;
+                if (kdiff[n] == -1) {
+                    keypacket.keystate = K_KEYUP;
+                }
+                else if (kdiff[n] == 1) {
+                    keypacket.keystate = K_KEYDOWN;
+                }
+                inpPackets.push_back(keypacket);
+            }
+        }
+
+        // std::cout<<(int)inpPackets.size()<<"\n";
+        
+        for (int k = 0; k < (int)inpPackets.size(); k++) {
+            // std::cout<<"Sendingp "<<(int)inpPackets[k].keycode<<" "<<(int)inpPackets[k].keystate<<"\n";
+            
+            zmq::message_t msg = zmq::message_t(sizeof(rr_packet));
+            memcpy(msg.data(), &inpPackets[k], sizeof(rr_packet));
+            zmq::send_flags flg = zmq::send_flags::sndmore;
+            if (k == inpPackets.size() - 1)
+                flg = zmq::send_flags::none;
+            sock.send(msg, flg);
+        }
+        
+        inpPackets.clear();
+
+        if (ready_for_recv) {
+            zmq::message_t msgr = zmq::message_t(sizeof(rr_packet));
+            sock.recv(msgr, zmq::recv_flags::none);
+        }
+    }
+
+
+    void QueueUpdatePackets() {
+        
+        while (true) {
+            
+            zmq::message_t nmsg = zmq::message_t(sizeof(ps_packet));
+            upd_sock.recv(nmsg, zmq::recv_flags::none);
+            
+            if (!upd_sock.get(zmq::sockopt::rcvmore))
+                break;
+
+            ps_packet ps;
+
+            memcpy(&ps, nmsg.data(), sizeof(ps_packet));
+            
+            if (ps.packet_type != P_STREAM_DONE)
+                packQueue.push_back(ps);    
+        }
+
+    }
+    
+    void ApplyQueueUpdatePacketsToState(EntityManager* em) {
+        std::vector<Entity*>& evref = em->getEntityVectorRef();
+        // std::cout<<(int)packQueue.size()<<"\n";
+        for (int p = 0; p < packQueue.size(); p++) {
+
+            // std::cout<<"Applying\n";
+            ps_packet pack_top = packQueue[p];
+            bool found = false;
+            // std::cout<<(int)pack_top.entity_id<<"\n";
+
+            for (int i = 0; (i < (int)evref.size()) && !found; i++) {
+
+                if (evref[i]->entity_id == entity_id)
+                    continue;
+
+                if (evref[i]->entity_id == pack_top.entity_id) {
+                    evref[i]->Unpacketize(&pack_top);
+                    found = true;
+                }
+            }    
+        }
+
+        packQueue.clear();
+
+    }
+
+    virtual void Update(float dt, InputManager* in, EntityManager* em) override {
+        // Queue up inputs from the client and send to server (should move into separate thread? unlikely tbh)
+        QueueInputs(in);
+
+        // Queue up packets from server
+        QueueUpdatePackets();
+
+        // apply packets gathered from server
+        ApplyQueueUpdatePacketsToState(em);
+    }
+
 };
+
 
