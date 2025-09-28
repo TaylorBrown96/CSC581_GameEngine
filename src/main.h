@@ -43,7 +43,7 @@ class TestEntity : public Entity {
     // carrier velocity (only meaningful when grounded on a platform)
     // Use the platform's timeline scale, not the player's timeline scale
     const float carrierVX =
-        (grounded && groundRef) ? groundRef->velocity.x * groundRef->timeline->getAbsoluteScale() : 0.0f;
+        (grounded && groundRef) ? groundRef->velocity.x : 0.0f;
 
     // base desired velocity from input (world-space)
     float desiredVX = 0.0f;

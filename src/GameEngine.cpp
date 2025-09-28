@@ -5,7 +5,7 @@
 #include <algorithm>
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
+GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), jobSystem(2) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
@@ -37,7 +37,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   }
 
   // Initialize systems
-  physics = std::make_unique<PhysicsSystem>();
+  physics = std::make_unique<PhysicsSystem>(3);
   input = std::make_unique<InputManager>();
   collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
@@ -67,10 +67,9 @@ void GameEngine::Run() {
     }
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
-    // Update input
-    input->Update();
-
-    // Update game
+    // Update engine systems in parallel
+    UpdateSystemsParallel(deltaTime / 1000.0);
+    // update game
     Update(deltaTime / 1000.0, entities);
 
     // Render
@@ -83,7 +82,6 @@ void GameEngine::Run() {
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   // Update all entities
-  rootTimeline->Update(deltaTime);
   for (auto &entity : entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
     entity->Update(entityDeltaTime, input.get(), entityManager.get());
@@ -126,12 +124,22 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
   renderSystem->Present();
 }
 
-// void GameEngine::AddEntity(Entity *entity) { entities.push_back(entity); }
-
-// void GameEngine::RemoveEntity(Entity *entity) {
-//   entities.erase(std::remove(entities.begin(), entities.end(), entity),
-//                  entities.end());
-// }
+void GameEngine::UpdateSystemsParallel(float deltaTime) {
+  // Clear the job queue for new frame
+  jobSystem.ClearJobs();
+  
+  // Add parallel system updates
+  jobSystem.AddJob([this]() {
+    input->Update();
+  });
+  
+  jobSystem.AddJob([this, deltaTime]() {
+    rootTimeline->Update(deltaTime);
+  });
+  
+  // Execute all engine system updates in parallel
+  jobSystem.ExecuteJobs();
+}
 
 void GameEngine::Shutdown() {
   entityManager->ClearAllEntities();
