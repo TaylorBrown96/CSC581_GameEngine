@@ -272,7 +272,7 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
 
 bool GameServer::Initialize(const char* title, int resx, int resy) {
     // Call base class initialization with small window size for headless operation
-    if (!GameEngine::Initialize("GameServer (Headless)", 320, 240)) {
+    if (!GameEngine::Initialize("GameServer (Headless)", 320, 240, 1.0f)) {
         return false;
     }
     

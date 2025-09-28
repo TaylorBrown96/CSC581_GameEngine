@@ -41,7 +41,7 @@ public:
     std::string GetClientId() const { return clientId; }
     
     // Override base class methods if needed
-    bool Initialize(const char* title, int resx, int resy);
+    bool Initialize(const char* title, int resx, int resy, float timeScale);
     void Run();
     void Shutdown();
     void RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor);

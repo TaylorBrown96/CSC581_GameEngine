@@ -2,7 +2,7 @@
 
 .clangd
 
-./build/*
+build/*
 
 # Prerequisites
 *.d

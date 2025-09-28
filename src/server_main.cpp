@@ -76,17 +76,17 @@ int main() {
     // Set up the player entity factory - developers can customize this
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
-    server.SetPlayerEntityFactory([](SDL_Renderer* renderer) -> Entity* {
-        return new TestEntity(100, 100, renderer);
+    server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
+        return new TestEntity(100, 100, server.GetRootTimeline(), renderer);
     });
 
-    Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRenderer());
+    Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
     platform1->hasPhysics = false;         // no integration
     platform1->affectedByGravity = false;  // no gravity
     platform1->isStatic = true;
     server.GetEntityManager()->AddEntity(platform1);
 
-    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRenderer());
+    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
     platform2->hasPhysics = true;  // we want horizontal motion we code ourselves
     platform2->affectedByGravity = false;  // but no gravity
     platform2->isStatic =

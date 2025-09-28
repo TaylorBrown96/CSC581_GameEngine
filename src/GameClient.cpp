@@ -144,9 +144,9 @@ void GameClient::ProcessServerMessages() {
     
 }
 
-bool GameClient::Initialize(const char* title, int resx, int resy) {
+bool GameClient::Initialize(const char* title, int resx, int resy, float timeScale) {
     // Call base class initialization
-    if (!GameEngine::Initialize(title, resx, resy)) {
+    if (!GameEngine::Initialize(title, resx, resy, timeScale)) {
         return false;
     }
     

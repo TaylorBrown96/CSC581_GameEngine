@@ -4,22 +4,21 @@
 #include <string>
 #include "main.h"
 
-GameClient client;
-
 int main() {
     std::cout << "Starting GameClient..." << std::endl;
     
+    GameClient client;
     
     // Register entity factory functions
 
     // Initialize the client
-    if (!client.Initialize("Game Client", 1000, 1000)) {
+    if (!client.Initialize("Game Client", 1000, 1000, 1.0f)) {
         std::cerr << "Failed to initialize client" << std::endl;
         return 1;
     }
 
-    client.RegisterEntity("TestEntity", []() -> Entity* { return new TestEntity(100, 100, client.GetRenderer()); });
-    client.RegisterEntity("Platform", []() -> Entity* { return new Platform(0, 0, 0, 0, false, client.GetRenderer()); });
+    client.RegisterEntity("TestEntity", [&client]() -> Entity* { return new TestEntity(100, 100, client.GetRootTimeline(), client.GetRenderer()); });
+    client.RegisterEntity("Platform", [&client]() -> Entity* { return new Platform(0, 0, 0, 0, false, client.GetRootTimeline(), client.GetRenderer()); });
     
     // Connect to the server (assuming server is running on localhost)
     std::string serverAddress = "localhost";
