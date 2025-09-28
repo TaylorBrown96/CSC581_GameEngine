@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Timeline.h"
 #include <SDL3/SDL.h>
 #include <map>
 #include <string>
@@ -44,6 +44,8 @@ class Entity {
   
   bool isVisible = true;
 
+  Timeline *timeline = nullptr;
+
   bool hasPhysics = true;
   bool affectedByGravity = true;
   bool isStatic = false;
@@ -68,13 +70,12 @@ class Entity {
   }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
-         float h = 32.0f)
-      : id(nextId++),
-        position({.x = startX, .y = startY}),
-        dimensions({.x = w, .y = h}) {
+         float h = 32.0f, Timeline *tl = nullptr)
+      : id(nextId++), position({.x = startX, .y = startY}), dimensions({.x = w, .y = h}) {
     if (affectedByGravity) {
       force.y = 9.8 * 300.0;
     }
+    timeline = tl;
   }
   virtual ~Entity() = default;
 
