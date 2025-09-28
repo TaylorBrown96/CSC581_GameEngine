@@ -31,8 +31,6 @@ option(USE_VENDORED_SDL3 "Use vendored SDL3 library" ON)
 option(USE_VENDORED_ZMQ "Use vendored ZeroMQ library" ON)
 option(USE_VENDORED_CPPZMQ "Use vendored cppzmq library" ON)
 
-# macOS Homebrew support
-
 
 # SDL3 Setup
 if(USE_VENDORED_SDL3)
@@ -99,11 +97,14 @@ set(REQUIRED_SOURCES
     src/EntityManager.cpp
     src/main.cpp
     src/GameEngine.cpp
+    src/GameServer.cpp
+    src/GameClient.cpp
     src/Input.cpp
     src/Render.cpp
     src/Physics.cpp
     src/Collisions.cpp
     src/vec2.cpp
+    src/JobSystem.cpp
 )
 
 # Start with required sources
@@ -122,6 +123,8 @@ endforeach()
 # Define header files (for IDE organization)
 set(ENGINE_HEADERS
     src/GameEngine.h
+    src/GameServer.h
+    src/GameClient.h
     src/Input.h
     src/Render.h
     src/Physics.h
@@ -140,6 +143,24 @@ target_link_libraries(GameEngine PRIVATE SDL3::SDL3)
 target_link_libraries(GameEngine PRIVATE libzmq)
 target_link_libraries(GameEngine PRIVATE cppzmq)
 
+# Create GameServer executable (excluding main.cpp to avoid duplicate main function)
+set(SERVER_SOURCES ${ENGINE_SOURCES})
+list(REMOVE_ITEM SERVER_SOURCES src/main.cpp)
+add_executable(GameServer src/server_main.cpp ${SERVER_SOURCES} ${ENGINE_HEADERS})
+target_include_directories(GameServer PRIVATE src)
+target_link_libraries(GameServer PRIVATE SDL3::SDL3)
+target_link_libraries(GameServer PRIVATE libzmq)
+target_link_libraries(GameServer PRIVATE cppzmq)
+
+# Create GameClient executable (excluding main.cpp to avoid duplicate main function)
+set(CLIENT_SOURCES ${ENGINE_SOURCES})
+list(REMOVE_ITEM CLIENT_SOURCES src/main.cpp)
+add_executable(GameClient src/client_main.cpp ${CLIENT_SOURCES} ${ENGINE_HEADERS})
+target_include_directories(GameClient PRIVATE src)
+target_link_libraries(GameClient PRIVATE SDL3::SDL3)
+target_link_libraries(GameClient PRIVATE libzmq)
+target_link_libraries(GameClient PRIVATE cppzmq)
+
 # macOS specific settings
 if(APPLE)
     # Enable bundle creation for macOS apps (optional)
@@ -147,8 +168,13 @@ if(APPLE)
     
     # Set proper install name for dynamic libraries on macOS
     set_target_properties(GameEngine PROPERTIES
-        INSTALL_RPATH "@executable_path"
+        INSTALL_RPATH "@executable_path;/opt/homebrew/lib;/usr/local/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
+    )
+    
+    # Add rpath for Homebrew libraries
+    set_target_properties(GameEngine PROPERTIES
+        INSTALL_RPATH_USE_LINK_PATH TRUE
     )
 endif()
 
