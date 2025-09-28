@@ -13,13 +13,13 @@ int main() {
     // Register entity factory functions
 
     // Initialize the client
-    if (!client.Initialize("Game Client", 1920, 1080)) {
+    if (!client.Initialize("Game Client", 1000, 1000)) {
         std::cerr << "Failed to initialize client" << std::endl;
         return 1;
     }
 
     client.RegisterEntity("TestEntity", []() -> Entity* { return new TestEntity(100, 100, client.GetRenderer()); });
-    client.RegisterEntity("Platform", []() -> Entity* { return new Platform(200, 400, 200, 20, false, client.GetRenderer()); });
+    client.RegisterEntity("Platform", []() -> Entity* { return new Platform(0, 0, 0, 0, false, client.GetRenderer()); });
     
     // Connect to the server (assuming server is running on localhost)
     std::string serverAddress = "localhost";

@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <unordered_map>
+#include <functional>
 
 // GameServer class that inherits from GameEngine
 class GameServer : public GameEngine {
@@ -25,6 +27,14 @@ private:
     // Connection management
     std::vector<std::string> connectedClients;
     std::mutex clientsMutex;
+    
+    // Client-to-entity mapping
+    std::unordered_map<std::string, Entity*> clientToEntityMap;
+    std::mutex entityMapMutex;
+    
+    // Player entity factory - allows developers to specify their own player entity class
+    // Parameters: renderer
+    std::function<Entity*(SDL_Renderer*)> playerEntityFactory;
     
     // Simple thread pool for processing client messages
     std::vector<std::thread> workerThreads;
@@ -54,6 +64,12 @@ public:
     void AddClient(const std::string& clientId);
     void RemoveClient(const std::string& clientId);
     std::vector<std::string> GetConnectedClients();
+    
+    // Player entity management
+    void SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory);
+    Entity* SpawnPlayerEntity(const std::string& clientId);
+    void DespawnPlayerEntity(const std::string& clientId);
+    Entity* GetPlayerEntity(const std::string& clientId);
     
     // Override base class methods if needed
     bool Initialize(const char* title, int resx, int resy);

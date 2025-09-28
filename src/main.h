@@ -6,7 +6,6 @@
 
 class TestEntity : public Entity {
  private:
-  int currentFrame;
   Uint32 lastFrameTime;
   int animationDelay;
 

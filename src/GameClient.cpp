@@ -5,6 +5,7 @@
 #include <random>
 #include <sstream>
 #include <functional>
+#include <set>
 
 using namespace std;
 
@@ -27,38 +28,45 @@ GameClient::~GameClient() {
 }
 
 bool GameClient::ConnectToServer(const std::string& address, int pubPort, int pullPort, const std::string& clientId) {
-    try {
-        if (!clientId.empty()) {
-            this->clientId = clientId;
-        }
-        
-        serverAddress = address;
-        serverPublisherPort = pubPort;
-        serverPullPort = pullPort;
-        
-        // Connect subscriber socket to server's publisher (receive game state)
-        std::string subscriberAddress = "tcp://" + address + ":" + std::to_string(pubPort);
-        subscriberSocket->connect(subscriberAddress);
-        subscriberSocket->set(zmq::sockopt::subscribe, ""); // Subscribe to all messages
-        std::cout << "Connected to server publisher at: " << subscriberAddress << std::endl;
-        
-        // Connect push socket to server's pull socket (send messages to server)
-        std::string pushAddress = "tcp://" + address + ":" + std::to_string(pullPort);
-        pushSocket->connect(pushAddress);
-        std::cout << "Connected to server pull socket at: " << pushAddress << std::endl;
-        
-        isConnected = true;
-        
-        // Send initial connection message
-        SendMessageToServer("CONNECT:" + this->clientId);
-        
-        std::cout << "GameClient " << this->clientId << " connected successfully to server" << std::endl;
-        return true;
-    } catch (const zmq::error_t& e) {
-        std::cerr << "Failed to connect to server: " << e.what() << std::endl;
-        isConnected = false;
-        return false;
+
+    if (!clientId.empty()) {
+        this->clientId = clientId;
     }
+    
+    serverAddress = address;
+    serverPublisherPort = pubPort;
+    serverPullPort = pullPort;
+    
+    // Connect subscriber socket to server's publisher (receive game state)
+    std::string subscriberAddress = "tcp://" + address + ":" + std::to_string(pubPort);
+    subscriberSocket->connect(subscriberAddress);
+    subscriberSocket->set(zmq::sockopt::subscribe, ""); // Subscribe to all messages
+    
+    // Set high water mark to control message buffering
+    subscriberSocket->set(zmq::sockopt::rcvhwm, 0);  // Receive HWM: buffer up to 10 messages
+    subscriberSocket->set(zmq::sockopt::sndhwm, 1);  // Send HWM: buffer up to 10 messages
+    
+    std::cout << "Connected to server publisher at: " << subscriberAddress << std::endl;
+    
+    // Connect push socket to server's pull socket (send messages to server)
+    std::string pushAddress = "tcp://" + address + ":" + std::to_string(pullPort);
+    pushSocket->connect(pushAddress);
+    std::cout << "Connected to server pull socket at: " << pushAddress << std::endl;
+    
+    isConnected = true;
+    
+    // Clear any existing entities to start fresh
+    auto entityMgr = GetEntityManager();
+    if (entityMgr) {
+        entityMgr->ClearAllEntities();
+        std::cout << "Cleared existing entities for fresh sync" << std::endl;
+    }
+    
+    // Send initial connection message
+    SendMessageToServer("CONNECT:" + this->clientId);
+    
+    std::cout << "GameClient " << this->clientId << " connected successfully to server" << std::endl;
+    return true;
 }
 
 void GameClient::DisconnectFromServer() {
@@ -83,14 +91,9 @@ void GameClient::SendMessageToServer(const std::string& message) {
     if (!isConnected || !pushSocket) {
         return;
     }
-    
-    try {
-        zmq::message_t zmqMessage(message.size());
-        memcpy(zmqMessage.data(), message.c_str(), message.size());
-        pushSocket->send(zmqMessage, zmq::send_flags::dontwait);
-    } catch (const zmq::error_t& e) {
-        std::cerr << "Failed to send message to server: " << e.what() << std::endl;
-    }
+    zmq::message_t zmqMessage(message.size());
+    memcpy(zmqMessage.data(), message.c_str(), message.size());
+    pushSocket->send(zmqMessage, zmq::send_flags::dontwait);
 }
 
 void GameClient::SendInputToServer() {
@@ -129,18 +132,16 @@ void GameClient::ProcessServerMessages() {
         return;
     }
     
-    try {
-        zmq::message_t message;
-        auto result = subscriberSocket->recv(message, zmq::recv_flags::none);
-        
-        if (result) {
-            std::string messageStr(static_cast<char*>(message.data()), message.size());            
-            // Process simple string entity data
-            ProcessStringEntityData(messageStr);
-        }
-    } catch (const zmq::error_t& e) {
-        // No message available or other error - this is normal
+    zmq::message_t message;
+    auto result = subscriberSocket->recv(message, zmq::recv_flags::dontwait);
+    
+    if (result) {
+        std::string messageStr(static_cast<char*>(message.data()), message.size());
+        std::cout << "Client " << clientId << " received message: " << messageStr << std::endl;
+        // Process simple string entity data
+        ProcessStringEntityData(messageStr);
     }
+    
 }
 
 bool GameClient::Initialize(const char* title, int resx, int resy) {
@@ -200,7 +201,7 @@ void GameClient::Run() {
             lastInputSend = currentTime;
         }
         Render(entities);
-        float delay = std::max(0.0, 1000.0 / 30.0 - deltaTime);
+        float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
         std::cout << "delay: " << delay << std::endl;
         SDL_Delay(delay);
     }
@@ -216,6 +217,8 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     if (entityData.empty()) {
         return;
     }
+    
+    std::cout << "Client " << clientId << " processing entity data: " << entityData << std::endl;
     
     // Split by newlines to get individual entity strings
     std::vector<std::string> entityLines;
@@ -235,6 +238,10 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     }
     
     std::vector<Entity*> localEntities = entityMgr->getEntityVectorRef();
+    std::cout << "Client " << clientId << " has " << localEntities.size() << " local entities" << std::endl;
+    
+    // Track which server entities we've seen
+    std::set<int> serverEntityIds;
     
     // For each entity from server, find or create corresponding local entity
     for (const std::string& entityLine : entityLines) {
@@ -265,6 +272,9 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
         int currentFrame = std::stoi(parts[9]);
         bool visible = (std::stoi(parts[10]) == 1);
         
+        // Track this server entity
+        serverEntityIds.insert(id);
+        
         // Find existing entity with this ID
         Entity* localEntity = nullptr;
         for (Entity* entity : localEntities) {
@@ -275,8 +285,10 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
         }
         
         if (localEntity) {
+            std::cout << "Client " << clientId << " updating existing entity " << id << std::endl;
             SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
         } else {
+            std::cout << "Client " << clientId << " creating new entity " << id << " of type " << entityType << std::endl;
             // Try to find a registered entity factory for this type
             auto it = this->entityFactory.find(entityType);
             if (it != this->entityFactory.end()) {
@@ -284,14 +296,24 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
             } else {
                 localEntity = new Entity(x, y, width, height);
             }
+            // CRITICAL: Override the auto-generated ID with server ID
             localEntity->SetId(id);
-            localEntity->SetPosition(x, y);
-            localEntity->SetDimensions(width, height);
-            localEntity->SetTextureState(textureState); 
-            localEntity->SetCurrentFrame(currentFrame);
-            localEntity->SetVisible(visible);
+            localEntity->entityType = entityType;
             entityMgr->AddEntity(localEntity);
+            // Sync with server data (this will override any factory defaults)
             SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+        }
+    }
+    
+    // Remove any local entities that are no longer on the server
+    auto& entities = entityMgr->getEntityVectorRef();
+    for (auto it = entities.begin(); it != entities.end();) {
+        if (serverEntityIds.find((*it)->GetId()) == serverEntityIds.end()) {
+            std::cout << "Client " << clientId << " removing entity " << (*it)->GetId() << " (no longer on server)" << std::endl;
+            delete *it;
+            it = entities.erase(it);
+        } else {
+            ++it;
         }
     }
 }
@@ -305,6 +327,10 @@ void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, floa
     entity->currentTextureState = textureState;
     entity->currentFrame = currentFrame;
     entity->isVisible = visible;
+    
+    // Debug logging to verify sync
+    std::cout << "Synced Entity ID " << entity->GetId() << " (" << entity->entityType 
+              << ") to position (" << x << ", " << y << ") dimensions (" << width << ", " << height << ")" << std::endl;
 }
 
 void GameClient::RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor) {

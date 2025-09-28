@@ -20,41 +20,45 @@ GameServer::~GameServer() {
 }
 
 bool GameServer::StartServer(int pubPort, int pullPort) {
-    try {
-        publisherPort = pubPort;
-        this->pullPort = pullPort;
-        publisherAddress = "tcp://*:" + std::to_string(publisherPort);
-        pullAddress = "tcp://*:" + std::to_string(this->pullPort);
-        
-        // Bind publisher socket
-        publisherSocket->bind(publisherAddress);
-        std::cout << "Publisher bound to: " << publisherAddress << std::endl;
-        
-        // Bind pull socket
-        pullSocket->bind(pullAddress);
-        std::cout << "Pull socket bound to: " << pullAddress << std::endl;
-        
-        isServerRunning = true;
-        shouldStop = false;
-        shouldStopWorkers = false;
-        
-        // Start message processor thread
-        messageProcessorThread = std::thread(&GameServer::MessageProcessorThread, this);
-        
-        // Start worker threads (simple thread pool)
-        int numWorkers = 4;
-        
-        for (int i = 0; i < numWorkers; ++i) {
-            workerThreads.emplace_back(&GameServer::WorkerThreadFunction, this);
-        }
-        
-        std::cout << "GameServer started successfully on ports " << pubPort << " (pub) and " << pullPort << " (pull)" << std::endl;
-        std::cout << "Started " << numWorkers << " worker threads" << std::endl;
-        return true;
-    } catch (const zmq::error_t& e) {
-        std::cerr << "Failed to start server: " << e.what() << std::endl;
-        return false;
+    
+    publisherPort = pubPort;
+    this->pullPort = pullPort;
+    publisherAddress = "tcp://*:" + std::to_string(publisherPort);
+    pullAddress = "tcp://*:" + std::to_string(this->pullPort);
+    
+    // Set high water mark on publisher socket to only keep latest messages
+    publisherSocket->set(zmq::sockopt::sndhwm, 1);  // Send HWM: only buffer 1 message
+    publisherSocket->set(zmq::sockopt::rcvhwm, 0);  // Receive HWM: no receive buffering needed
+    
+    // Bind publisher socket
+    publisherSocket->bind(publisherAddress);
+    std::cout << "Publisher bound to: " << publisherAddress << std::endl;
+    
+    // Set high water mark on pull socket
+    pullSocket->set(zmq::sockopt::rcvhwm, 10);  // Receive HWM: buffer up to 10 client messages
+    pullSocket->set(zmq::sockopt::sndhwm, 0);   // Send HWM: no send buffering needed
+    
+    // Bind pull socket
+    pullSocket->bind(pullAddress);
+    std::cout << "Pull socket bound to: " << pullAddress << std::endl;
+    
+    isServerRunning = true;
+    shouldStop = false;
+    shouldStopWorkers = false;
+    
+    // Start message processor thread
+    messageProcessorThread = std::thread(&GameServer::MessageProcessorThread, this);
+    
+    // Start worker threads (simple thread pool)
+    int numWorkers = 4;
+    
+    for (int i = 0; i < numWorkers; ++i) {
+        workerThreads.emplace_back(&GameServer::WorkerThreadFunction, this);
     }
+    
+    std::cout << "GameServer started successfully on ports " << pubPort << " (pub) and " << pullPort << " (pull)" << std::endl;
+    std::cout << "Started " << numWorkers << " worker threads" << std::endl;
+    return true;
 }
 
 void GameServer::StopServer() {
@@ -98,18 +102,14 @@ void GameServer::BroadcastGameState(const std::string& gameState) {
         return;
     }
     
-    try {
-        zmq::message_t message(gameState.size());
-        memcpy(message.data(), gameState.c_str(), gameState.size());
-        publisherSocket->send(message, zmq::send_flags::dontwait);
-    } catch (const zmq::error_t& e) {
-        std::cerr << "Failed to broadcast game state: " << e.what() << std::endl;
-    }
+    zmq::message_t message(gameState.size());
+    memcpy(message.data(), gameState.c_str(), gameState.size());
+    publisherSocket->send(message, zmq::send_flags::dontwait);
+    
 }
 
 void GameServer::ProcessClientMessages() {
-    // This method is now handled by individual client threads
-    // This is kept for compatibility but does nothing
+
 }
 
 void GameServer::AddClient(const std::string& clientId) {
@@ -132,28 +132,63 @@ std::vector<std::string> GameServer::GetConnectedClients() {
     return connectedClients;
 }
 
+void GameServer::SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory) {
+    playerEntityFactory = factory;
+}
+
+Entity* GameServer::SpawnPlayerEntity(const std::string& clientId) {
+    if (!playerEntityFactory) {
+        std::cerr << "Warning: No player entity factory set. Cannot spawn player for client: " << clientId << std::endl;
+        return nullptr;
+    }
+    
+    // Get the renderer from the game engine
+    SDL_Renderer* renderer = GetRenderer();
+    
+    Entity* playerEntity = playerEntityFactory(renderer);
+    if (playerEntity) {
+        std::lock_guard<std::mutex> lock(entityMapMutex);
+        clientToEntityMap[clientId] = playerEntity;
+        GetEntityManager()->AddEntity(playerEntity);
+        std::cout << "Spawned player entity for client: " << clientId << std::endl;
+    }
+    return playerEntity;
+}
+
+void GameServer::DespawnPlayerEntity(const std::string& clientId) {
+    std::lock_guard<std::mutex> lock(entityMapMutex);
+    auto it = clientToEntityMap.find(clientId);
+    if (it != clientToEntityMap.end()) {
+        Entity* playerEntity = it->second;
+        GetEntityManager()->RemoveEntity(playerEntity);
+        delete playerEntity; // Clean up the entity
+        clientToEntityMap.erase(it);
+        std::cout << "Despawned player entity for client: " << clientId << std::endl;
+    }
+}
+
+Entity* GameServer::GetPlayerEntity(const std::string& clientId) {
+    std::lock_guard<std::mutex> lock(entityMapMutex);
+    auto it = clientToEntityMap.find(clientId);
+    return (it != clientToEntityMap.end()) ? it->second : nullptr;
+}
+
 void GameServer::MessageProcessorThread() {
     while (!shouldStop) {
-        try {
-            // Receive message from pull socket
-            zmq::message_t message;
-            auto result = pullSocket->recv(message, zmq::recv_flags::dontwait);
-            
-            if (result) {
-                std::string messageStr(static_cast<char*>(message.data()), message.size());
-                std::cout << "Server received message: " << messageStr << std::endl;
-                
-                // Add message to queue for worker threads to process
-                {
-                    std::lock_guard<std::mutex> lock(messageQueueMutex);
-                    messageQueue.push(messageStr);
-                }
-                messageCondition.notify_one();
-            }
-        } catch (const zmq::error_t& e) {
-            // No message available or other error - this is normal
-        }
+        zmq::message_t message;
+        auto result = pullSocket->recv(message, zmq::recv_flags::dontwait);
         
+        if (result) {
+            std::string messageStr(static_cast<char*>(message.data()), message.size());
+            std::cout << "Server received message: " << messageStr << std::endl;
+            
+            // Add message to queue for worker threads to process
+            {
+                std::lock_guard<std::mutex> lock(messageQueueMutex);
+                messageQueue.push(messageStr);
+            }
+            messageCondition.notify_one();
+        }
         std::this_thread::sleep_for(std::chrono::milliseconds(1)); // Small delay
     }
 }
@@ -188,9 +223,11 @@ void GameServer::ProcessMessage(const std::string& message) {
     if (message.find("CONNECT:") == 0) {
         std::string clientId = message.substr(8); // Remove "CONNECT:" prefix
         AddClient(clientId);
+        SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
     }
     else if (message.find("DISCONNECT:") == 0) {
         std::string clientId = message.substr(11); // Remove "DISCONNECT:" prefix
+        DespawnPlayerEntity(clientId); // Despawn the player entity
         RemoveClient(clientId);
     }
     else if (message.find("ACTIONS:") == 0) {
@@ -294,10 +331,18 @@ void GameServer::Run() {
         // Process client messages (handled by worker threads)
         HandleClientConnections();
         
-        std::string gameState = SerializeEntityVector(entities);
-        BroadcastGameState(gameState);        
+        // Check if 10ms have passed since last broadcast
+        auto now = std::chrono::steady_clock::now();
+        auto timeSinceLastBroadcast = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastBroadcast);
+        
+        if (timeSinceLastBroadcast.count() >= 10) {
+            std::string gameState = SerializeEntityVector(entities);
+            BroadcastGameState(gameState);
+            lastBroadcast = now;
+        }
 
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
+        SDL_Log("Server delay: %f", delay);
         SDL_Delay(delay);
     }
     
@@ -328,6 +373,9 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
            << entity->currentTextureState << ","
            << entity->currentFrame << ","
            << (entity->isVisible ? 1 : 0);
+        if(entity->entityType == "TestEntity") {
+            SDL_Log("Server current frame entity: %d", entity->currentFrame);
+        }
         
         // Add newline to separate entities
         if (i < entities.size() - 1) {
@@ -336,6 +384,10 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
     }
     
     std::string result = ss.str();
-    // std::cout << "Serialized " << entities.size() << " entities: " << result << std::endl;
+    std::cout << "Server broadcasting " << entities.size() << " entities" << std::endl;
+    for (const auto& entity : entities) {
+        std::cout << "  Entity " << entity->GetId() << " (" << entity->entityType 
+                  << ") at (" << entity->position.x << ", " << entity->position.y << ")" << std::endl;
+    }
     return result;
 }

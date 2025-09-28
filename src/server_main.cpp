@@ -7,6 +7,44 @@
 #include <chrono>
 #include "main.h"
 
+/*
+ * Example of how developers can create their own custom player entity class:
+ * 
+ * class MyCustomPlayerEntity : public Entity {
+ * public:
+ *     MyCustomPlayerEntity(const std::string& clientId, SDL_Renderer* renderer) 
+ *         : Entity(100, 100, 64, 64) { // Default spawn position
+ *         entityType = "CustomPlayer_" + clientId;
+ *         hasPhysics = true;
+ *         affectedByGravity = true;
+ *         
+ *         // Load custom texture using the renderer
+ *         if (renderer) {
+ *             SDL_Texture* playerTexture = LoadTexture(renderer, "media/player_texture.bmp");
+ *             if (playerTexture) {
+ *                 Texture tex = {
+ *                     .sheet = playerTexture,
+ *                     .num_frames_x = 4,
+ *                     .num_frames_y = 1,
+ *                     .frame_width = 64,
+ *                     .frame_height = 64,
+ *                     .loop = true
+ *                 };
+ *                 SetTexture(0, &tex);
+ *             }
+ *         }
+ *     }
+ *     
+ *     void Update(float deltaTime, InputManager* input, EntityManager* entityMgr) override {
+ *         // Add custom player logic here
+ *         Entity::Update(deltaTime, input, entityMgr);
+ *     }
+ * };
+ * 
+ * Then in the factory function, you would use:
+ * return new MyCustomPlayerEntity(clientId, renderer);
+ */
+
 // Global server pointer for signal handling
 GameServer* g_server = nullptr;
 
@@ -34,18 +72,21 @@ int main() {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;
     }
+    
+    // Set up the player entity factory - developers can customize this
+    // This allows the engine to remain game-agnostic while letting developers
+    // specify their own player entity class
+    server.SetPlayerEntityFactory([](SDL_Renderer* renderer) -> Entity* {
+        return new TestEntity(100, 100, renderer);
+    });
 
-    TestEntity *testEntity = new TestEntity(100, 100, server.GetRenderer());
-    testEntity->hasPhysics = true;  // Enable physics for TestEntity
-    server.GetEntityManager()->AddEntity(testEntity);
-
-    Platform *platform1 = new Platform(300, 800, 300, 75);
+    Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRenderer());
     platform1->hasPhysics = false;         // no integration
     platform1->affectedByGravity = false;  // no gravity
     platform1->isStatic = true;
     server.GetEntityManager()->AddEntity(platform1);
 
-    Platform *platform2 = new Platform(800, 650, 300, 75, true);
+    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRenderer());
     platform2->hasPhysics = true;  // we want horizontal motion we code ourselves
     platform2->affectedByGravity = false;  // but no gravity
     platform2->isStatic =
