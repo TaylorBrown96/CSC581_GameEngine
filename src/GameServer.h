@@ -8,6 +8,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <functional>
+#include <queue>
 
 // GameServer class that inherits from GameEngine
 class GameServer : public GameEngine {
