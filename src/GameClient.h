@@ -3,6 +3,8 @@
 #include "GameEngine.h"
 #include <zmq.hpp>
 #include <string>
+#include <map>
+#include <functional>
 
 // GameClient class that inherits from GameEngine
 class GameClient : public GameEngine {
