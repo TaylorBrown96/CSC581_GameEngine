@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <map>
+#include <string>
 
 #include <vector>
 
@@ -81,6 +82,7 @@ class Entity {
   void SetId(int id) { this->id = id; }
 
   virtual void Update(float, InputManager *, EntityManager *) {}
+  virtual void OnActivity(const std::string&) {}
   virtual void OnCollision(Entity *, CollisionData *) {}
 
   void SetTexture(int state, Texture *tex) {

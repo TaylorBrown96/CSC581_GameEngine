@@ -266,18 +266,7 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
     
     // Process each action for the client
     for (const auto& actionName : actions) {
-        std::cout << "Processing action '" << actionName << "' for client " << clientId << std::endl;
-        
-        // TODO: Apply game logic based on the action
-        // This is where game-specific logic would go
-        // For example:
-        // - MOVE_UP: Move player up
-        // - JUMP: Make player jump
-        // - ATTACK: Trigger attack animation/damage
-        // etc.
-        
-        // For now, just log the action
-        // In a real game, this would update the game state based on the action
+        GetPlayerEntity(clientId)->OnActivity(actionName);
     }
 }
 
@@ -342,7 +331,6 @@ void GameServer::Run() {
         }
 
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        SDL_Log("Server delay: %f", delay);
         SDL_Delay(delay);
     }
     
@@ -373,9 +361,6 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
            << entity->currentTextureState << ","
            << entity->currentFrame << ","
            << (entity->isVisible ? 1 : 0);
-        if(entity->entityType == "TestEntity") {
-            SDL_Log("Server current frame entity: %d", entity->currentFrame);
-        }
         
         // Add newline to separate entities
         if (i < entities.size() - 1) {
@@ -384,10 +369,5 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
     }
     
     std::string result = ss.str();
-    std::cout << "Server broadcasting " << entities.size() << " entities" << std::endl;
-    for (const auto& entity : entities) {
-        std::cout << "  Entity " << entity->GetId() << " (" << entity->entityType 
-                  << ") at (" << entity->position.x << ", " << entity->position.y << ")" << std::endl;
-    }
     return result;
 }

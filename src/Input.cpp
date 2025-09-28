@@ -4,7 +4,6 @@
 // SDL3: SDL_GetKeyboardState returns const bool*
 // keyboardState points to SDL's internal array for the *current* frame.
 InputManager::InputManager() : keyboardState(nullptr) {
-    SetupDefaultActions();
 }
 
 void InputManager::Update() {
@@ -97,22 +96,4 @@ std::vector<std::string> InputManager::GetActiveActions() const {
     }
     
     return activeActions;
-}
-
-void InputManager::SetupDefaultActions() {
-    // Movement actions
-    AddAction("MOVE_UP", SDL_SCANCODE_W);
-    AddAction("MOVE_UP", SDL_SCANCODE_UP);
-    
-    AddAction("MOVE_DOWN", SDL_SCANCODE_S);
-    AddAction("MOVE_DOWN", SDL_SCANCODE_DOWN);
-    
-    AddAction("MOVE_LEFT", SDL_SCANCODE_A);
-    AddAction("MOVE_LEFT", SDL_SCANCODE_LEFT);
-    
-    AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
-    AddAction("MOVE_RIGHT", SDL_SCANCODE_RIGHT);
-    
-    // Jump action
-    AddAction("JUMP", SDL_SCANCODE_SPACE);
 }

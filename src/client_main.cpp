@@ -25,7 +25,9 @@ int main() {
     std::string serverAddress = "localhost";
     int publisherPort = 5555;
     int pullPort = 5556;
-    
+    client.GetInput()->AddAction("MOVE_LEFT", SDL_SCANCODE_A);
+    client.GetInput()->AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
+    client.GetInput()->AddAction("JUMP", SDL_SCANCODE_SPACE);
     std::cout << "Connecting to server at " << serverAddress << ":" << publisherPort << "/" << pullPort << std::endl;
     
     if (!client.ConnectToServer(serverAddress, publisherPort, pullPort)) {
