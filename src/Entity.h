@@ -31,6 +31,7 @@ class Entity {
   int id;
 
  public:
+  std::string entityType;
   vec2 position;
   vec2 dimensions;  //
   vec2 velocity;    // float velocityX = 0.0f, velocityY = 0.0f;
@@ -38,6 +39,7 @@ class Entity {
 
   std::map<int, Texture> textures;
   int currentTextureState = 0;
+  int currentFrame = 0;
   
   bool isVisible = true;
 
@@ -49,6 +51,19 @@ class Entity {
   virtual bool GetSourceRect(SDL_FRect &out) const {
     (void)out;
     return false;
+  }
+
+  void SetDimensions(float w, float h) {
+    this->dimensions.x = w;
+    this->dimensions.y = h;
+  }
+
+  void SetCurrentFrame(int frame) {
+    currentFrame = frame;
+  }
+
+  void SetVisible(bool visible) {
+    isVisible = visible;
   }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,
@@ -63,6 +78,7 @@ class Entity {
   virtual ~Entity() = default;
 
   int GetId() const { return id; }
+  void SetId(int id) { this->id = id; }
 
   virtual void Update(float, InputManager *, EntityManager *) {}
   virtual void OnCollision(Entity *, CollisionData *) {}

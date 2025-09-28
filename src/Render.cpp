@@ -2,7 +2,6 @@
 
 #include <SDL3/SDL.h>
 #include <vec2.h>
-
 RenderSystem::RenderSystem(SDL_Renderer *renderer)
     : renderer(renderer),
       currentMode(ScalingMode::CONSTANT_SIZE),
@@ -41,8 +40,9 @@ void RenderSystem::RenderEntity(const Entity *entity) {
   // If you have an accessor, replace with: SDL_Texture* tex =
   // entity->GetTexture();
   auto it = entity->textures.find(entity->currentTextureState);
-  if (it == entity->textures.end())
+  if (it == entity->textures.end()) {
     return;
+  }
   SDL_Texture *tex = it->second.sheet;
   if (!tex)
     return;
@@ -54,7 +54,6 @@ void RenderSystem::RenderEntity(const Entity *entity) {
   if (entity->GetSourceRect(src)) {
     psrc = &src;  // draw the current frame
   }
-
   SDL_RenderTexture(renderer, tex, psrc, &dst);
 }
 

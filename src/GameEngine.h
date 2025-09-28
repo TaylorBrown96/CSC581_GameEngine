@@ -20,6 +20,7 @@ class GameEngine {
   SDL_Window *window;
   SDL_Renderer *renderer;
   bool running;
+  bool headlessMode;
 
   std::unique_ptr<PhysicsSystem> physics;
   std::unique_ptr<InputManager> input;
@@ -31,6 +32,7 @@ class GameEngine {
 
  public:
   GameEngine();
+  GameEngine(bool headless);
   ~GameEngine();
 
   bool Initialize(const char *title, int resx, int resy);

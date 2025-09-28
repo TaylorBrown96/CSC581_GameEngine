@@ -3,9 +3,12 @@
 #include "GameEngine.h"
 
 #include <algorithm>
+#include <iostream>
+using namespace std;
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false) {}
+GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), headlessMode(false) {}
+GameEngine::GameEngine(bool headless) : window(nullptr), renderer(nullptr), running(false), headlessMode(headless) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
@@ -16,20 +19,36 @@ bool GameEngine::Initialize(const char *title, int resx, int resy) {
     return false;
   }
 
-  // Create window (1920x1080 as required)
   winsizeX = resx;
   winsizeY = resy;
-  window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
-  if (!window) {
-    SDL_Log("Failed to create window: %s", SDL_GetError());
-    return false;
-  }
+  if (!headlessMode) {
+    // Create window normally
+    window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
+    if (!window) {
+      SDL_Log("Failed to create window: %s", SDL_GetError());
+      return false;
+    }
 
-  // Create renderer
-  renderer = SDL_CreateRenderer(window, nullptr);
-  if (!renderer) {
-    SDL_Log("Failed to create renderer: %s", SDL_GetError());
-    return false;
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+      SDL_Log("Failed to create renderer: %s", SDL_GetError());
+      return false;
+    }
+  } else {
+    // Create hidden window for headless mode
+    window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_HIDDEN);
+    if (!window) {
+      SDL_Log("Failed to create hidden window: %s", SDL_GetError());
+      return false;
+    }
+
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+      SDL_Log("Failed to create renderer: %s", SDL_GetError());
+      return false;
+    }
   }
 
   // Initialize systems
