@@ -108,12 +108,8 @@ void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
     entity->Update(entityDeltaTime, input.get(), entityManager.get());
 
-    // Apply physics if entity has physics enabled
-    if (entity->hasPhysics) {
-      physics->ApplyPhysics(entity, entityDeltaTime);
-    }
   }
-
+  physics->ApplyPhysicsMultithreaded(entities);
   // Process collisions
   collision->ProcessCollisions(entities);
 }

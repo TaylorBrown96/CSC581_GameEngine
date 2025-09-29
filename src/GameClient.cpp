@@ -59,7 +59,6 @@ bool GameClient::ConnectToServer(const std::string& address, int pubPort, int pu
     auto entityMgr = GetEntityManager();
     if (entityMgr) {
         entityMgr->ClearAllEntities();
-        std::cout << "Cleared existing entities for fresh sync" << std::endl;
     }
     
     // Send initial connection message
@@ -137,7 +136,6 @@ void GameClient::ProcessServerMessages() {
     
     if (result) {
         std::string messageStr(static_cast<char*>(message.data()), message.size());
-        std::cout << "Client " << clientId << " received message: " << messageStr << std::endl;
         // Process simple string entity data
         ProcessStringEntityData(messageStr);
     }
@@ -202,7 +200,6 @@ void GameClient::Run() {
         }
         Render(entities);
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        std::cout << "delay: " << delay << std::endl;
         SDL_Delay(delay);
     }
 }
@@ -217,9 +214,7 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     if (entityData.empty()) {
         return;
     }
-    
-    std::cout << "Client " << clientId << " processing entity data: " << entityData << std::endl;
-    
+        
     // Split by newlines to get individual entity strings
     std::vector<std::string> entityLines;
     std::stringstream ss(entityData);
@@ -238,7 +233,6 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     }
     
     std::vector<Entity*> localEntities = entityMgr->getEntityVectorRef();
-    std::cout << "Client " << clientId << " has " << localEntities.size() << " local entities" << std::endl;
     
     // Track which server entities we've seen
     std::set<int> serverEntityIds;
@@ -285,10 +279,8 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
         }
         
         if (localEntity) {
-            std::cout << "Client " << clientId << " updating existing entity " << id << std::endl;
             SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
         } else {
-            std::cout << "Client " << clientId << " creating new entity " << id << " of type " << entityType << std::endl;
             // Try to find a registered entity factory for this type
             auto it = this->entityFactory.find(entityType);
             if (it != this->entityFactory.end()) {
@@ -309,7 +301,6 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     auto& entities = entityMgr->getEntityVectorRef();
     for (auto it = entities.begin(); it != entities.end();) {
         if (serverEntityIds.find((*it)->GetId()) == serverEntityIds.end()) {
-            std::cout << "Client " << clientId << " removing entity " << (*it)->GetId() << " (no longer on server)" << std::endl;
             delete *it;
             it = entities.erase(it);
         } else {
@@ -327,10 +318,6 @@ void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, floa
     entity->currentTextureState = textureState;
     entity->currentFrame = currentFrame;
     entity->isVisible = visible;
-    
-    // Debug logging to verify sync
-    std::cout << "Synced Entity ID " << entity->GetId() << " (" << entity->entityType 
-              << ") to position (" << x << ", " << y << ") dimensions (" << width << ", " << height << ")" << std::endl;
 }
 
 void GameClient::RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor) {
