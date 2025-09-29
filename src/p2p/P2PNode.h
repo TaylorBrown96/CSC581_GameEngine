@@ -18,11 +18,17 @@
 class P2PNode {
 public:
     struct Config {
-        std::string trackerRep = "tcp://127.0.0.1:6000";
-        std::string trackerPub = "tcp://127.0.0.1:6001";
-        int recvTimeoutMsTracker = 100;
-        int recvTimeoutMsPeers   = 10;
-        int sendTimeoutMs       = 10;
+        std::string trackerRep;
+        std::string trackerPub;
+        int recvTimeoutMsTracker;
+        int recvTimeoutMsPeers;
+        int sendTimeoutMs;
+        
+        Config() : trackerRep("tcp://127.0.0.1:6000"), 
+                   trackerPub("tcp://127.0.0.1:6001"),
+                   recvTimeoutMsTracker(100),
+                   recvTimeoutMsPeers(10),
+                   sendTimeoutMs(10) {}
     };
 
     using MessageHandler = std::function<void(const std::string&)>;
