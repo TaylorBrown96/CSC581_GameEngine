@@ -13,6 +13,7 @@ GameServer::GameServer() : GameEngine(true), isServerRunning(false), publisherPo
     zmqContext = std::make_unique<zmq::context_t>(1);
     publisherSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PUB);
     pullSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PULL);
+    rootTimeline = std::make_unique<Timeline>(1.0f, nullptr);
 }
 
 GameServer::~GameServer() {
@@ -303,19 +304,9 @@ void GameServer::Run() {
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
         }
-
+        GetRootTimeline()->Update(deltaTime / 1000.0f);
         // Update the game engine (physics, collisions, etc.)
-        for (auto &entity : entities) {
-            entity->Update(deltaTime / 1000.0f, GetInput(), entityMgr);
-            
-            // Apply physics if entity has physics enabled
-            if (entity->hasPhysics) {
-                GetPhysics()->ApplyPhysics(entity, deltaTime / 1000.0f);
-            }
-        }
-        
-        // Process collisions
-        GetCollision()->ProcessCollisions(entities);
+        Update(deltaTime, entities);
         
         // Process client messages (handled by worker threads)
         HandleClientConnections();
