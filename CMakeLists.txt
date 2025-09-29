@@ -91,7 +91,9 @@ if(USE_VENDORED_CPPZMQ)
     endif()
 endif()
 
-# Define required source files
+#################
+# SOURCE FILES
+#################
 
 # ---------- ENGINE SOURCES ----------
 set(REQUIRED_SOURCES
@@ -131,7 +133,10 @@ set(ENGINE_HEADERS
     src/Entity.h
 )
 
-# ---------- FACTOR INTO A REUSABLE LIB ----------
+##############
+# TARGETS
+##############
+
 set(CORE_SOURCES ${ENGINE_SOURCES})
 list(REMOVE_ITEM CORE_SOURCES src/main.cpp)
 
@@ -142,13 +147,17 @@ add_library(EngineCore STATIC
 target_include_directories(EngineCore PUBLIC src)
 target_link_libraries(EngineCore PUBLIC SDL3::SDL3 libzmq cppzmq)
 
-# ---------- EXECUTABLES THAT LINK THE CORE ----------
-# GameEngine app: main() only; link the core
+##########################
+# APPLICATION TARGETS
+##########################
+
+
+# ---------- GAME ENGINE APP ----------
 add_executable(GameEngine src/main.cpp)
 target_include_directories(GameEngine PRIVATE src)
 target_link_libraries(GameEngine PRIVATE EngineCore)
 
-# GameServer app
+# ---------- SERVER & CLIENT APPS ----------
 add_executable(GameServer src/server_main.cpp)
 target_include_directories(GameServer PRIVATE src)
 target_link_libraries(GameServer PRIVATE EngineCore)
@@ -178,6 +187,30 @@ add_executable(P2PDemoPong
 )
 target_include_directories(P2PDemoPong PRIVATE src)
 target_link_libraries(P2PDemoPong PRIVATE EngineCore P2PTemplate)
+
+# --- P2P Template V2 (snapshot-enabled node + tracker) ---
+add_library(P2PTemplateV2 STATIC
+    src/p2p_v2/P2PTrackerV2.cpp src/p2p_v2/P2PTrackerV2.h
+    src/p2p_v2/P2PNodeV2.cpp    src/p2p_v2/P2PNodeV2.h
+)
+target_include_directories(P2PTemplateV2 PUBLIC src)
+target_link_libraries(P2PTemplateV2 PUBLIC SDL3::SDL3 libzmq cppzmq)
+
+# v2 tracker executable
+add_executable(P2PTrackerV2Exe
+    src/p2p_v2/tracker_v2_main.cpp
+)
+target_include_directories(P2PTrackerV2Exe PRIVATE src)
+target_link_libraries(P2PTrackerV2Exe PRIVATE P2PTemplateV2)
+
+# Decentralized Pong demo (no single authority)
+add_executable(P2PDemoPongV2
+    src/p2pPongDemoV2/p2p_pong_demo_v2_main.cpp
+    src/p2pPongDemoV2/PongDemoV2.cpp src/p2pPongDemoV2/PongDemoV2.h
+)
+target_include_directories(P2PDemoPongV2 PRIVATE src)
+target_link_libraries(P2PDemoPongV2 PRIVATE EngineCore P2PTemplateV2)
+
 
 # macOS specific settings
 if(APPLE)
