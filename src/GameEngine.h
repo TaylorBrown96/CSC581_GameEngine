@@ -18,7 +18,7 @@
 
 // Core Engine Class
 class GameEngine {
- private:
+ protected:
   int winsizeX;
   int winsizeY;
   SDL_Window *window;
