@@ -106,6 +106,7 @@ target_link_libraries(GameClient PRIVATE EngineCore)
 
 # --- P2P Skelly demo (authority-based) ---
 add_executable(P2PSkelly
+  src/P2PHandler.cpp
   src/P2P_main.cpp
   src/p2p/P2PNode.cpp         # compile P2P node into this target
 )
