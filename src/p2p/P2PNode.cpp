@@ -141,3 +141,58 @@ void P2PNode::peerRxThreadFunc() {
         }
     }
 }
+
+std::string P2PNode::SerializeEntities(GameEngine* engine) {
+    std::ostringstream ss;
+    auto& entities = engine->GetEntityManager()->getEntityVectorRef();
+    for (size_t i = 0; i < entities.size(); ++i) {
+        const Entity* e = entities[i];
+        ss << e->GetId() << ","
+           << e->entityType << ","
+           << e->position.x << ","
+           << e->position.y << ","
+           << e->dimensions.x << ","
+           << e->dimensions.y << ","
+           << e->velocity.x << ","
+           << e->velocity.y << ","
+           << e->currentTextureState << ","
+           << e->currentFrame << ","
+           << (e->isVisible ? 1 : 0);
+        if (i + 1 < entities.size()) ss << "\n";
+    }
+    return ss.str();
+}
+
+void P2PNode::PublishStateNow(GameEngine* engine) {
+    publish(std::string("STATE\n") + SerializeEntities(engine));
+}
+
+void P2PNode::SendActions(int peerId, const std::vector<std::string>& actions) {
+    std::ostringstream s;
+    s << "ACTIONS:" << peerId << ":";
+    for (size_t i = 0; i < actions.size(); ++i) {
+        if (i > 0) s << ",";
+        s << actions[i];
+    }
+    publish(s.str());
+}
+
+void P2PNode::ApplyActions(Entity* entity, const std::vector<std::string>& actions) {
+    if (!entity) return;
+    
+    for (const auto& action : actions) {
+        entity->OnActivity(action);
+    }
+}
+
+void P2PNode::SendConnect(int peerId) {
+    std::ostringstream s;
+    s << "CONNECT:" << peerId;
+    publish(s.str());
+}
+
+void P2PNode::SendDisconnect(int peerId) {
+    std::ostringstream s;
+    s << "DISCONNECT:" << peerId;
+    publish(s.str());
+}

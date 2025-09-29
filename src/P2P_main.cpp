@@ -16,18 +16,18 @@ static uint64_t nowMs() {
 bool P2PSkellyGame::Boot(const char* title, int w, int h, float timeScale,
                          const std::string& trackerRep, const std::string& trackerPub)
 {
-    if (!Initialize(title, w, h, timeScale)) {
+    if (!engine_.Initialize(title, w, h, timeScale)) {
         std::cerr << "[P2PMain] Initialize failed\n";
         return false;
     }
-    GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
+    engine_.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
     SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
 
     // Factories used by clients to reconstruct entities from STATE
     auto makePlayer = [this]() -> Entity* {
-        auto* e = new TestEntity(100, 100, GetRootTimeline(), GetRenderer());
+        auto* e = new TestEntity(100, 100, engine_.GetRootTimeline(), engine_.GetRenderer());
         e->hasPhysics = true;
-        SDL_Texture* t = LoadTexture(GetRenderer(),
+        SDL_Texture* t = LoadTexture(engine_.GetRenderer(),
             "media/cartooncrypteque_character_skellywithahat_idleright.bmp");
         if (t) { Texture tex = { t, 8, 0, 512, 512, true }; e->SetTexture(0, &tex); }
         return e;
@@ -38,9 +38,9 @@ bool P2PSkellyGame::Boot(const char* title, int w, int h, float timeScale,
     factory_["Skeleton"]   = makePlayer;
 
     factory_["Platform"] = [this]() -> Entity* {
-        Platform* p = new Platform(0,0,200,20,false, GetRootTimeline(), GetRenderer());
+        Platform* p = new Platform(0,0,200,20,false, engine_.GetRootTimeline(), engine_.GetRenderer());
         p->hasPhysics = false; p->affectedByGravity = false; p->isStatic = true;
-        SDL_Texture* t = LoadTexture(GetRenderer(), "media/cartooncrypteque_platform_basicground_idle.bmp");
+        SDL_Texture* t = LoadTexture(engine_.GetRenderer(), "media/cartooncrypteque_platform_basicground_idle.bmp");
         if (t) { Texture tex = { t, 1, 1, 200, 20, true }; p->SetTexture(0, &tex); }
         return p;
     };
@@ -63,35 +63,35 @@ bool P2PSkellyGame::Boot(const char* title, int w, int h, float timeScale,
         worldSpawned_ = true;
         std::lock_guard<std::mutex> lk(peersMtx_);
         connectedPeers_.push_back(myId_);
-        publishStateNow(); // push immediate state so clients see us right away
+        node_.PublishStateNow(&engine_); // push immediate state so clients see us right away
     }
 
     // Bind keys
-    GetInput()->AddAction("MOVE_LEFT",  SDL_SCANCODE_A);
-    GetInput()->AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
-    GetInput()->AddAction("JUMP",       SDL_SCANCODE_SPACE);
+    engine_.GetInput()->AddAction("MOVE_LEFT",  SDL_SCANCODE_A);
+    engine_.GetInput()->AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
+    engine_.GetInput()->AddAction("JUMP",       SDL_SCANCODE_SPACE);
 
     // Announce presence (authority will spawn us on CONNECT)
-    sendConnect();
+    node_.SendConnect(myId_);
     return true;
 }
 
 void P2PSkellyGame::stop() {
-    sendDisconnect();
+    node_.SendDisconnect(myId_);
     node_.stop();
-    Shutdown();
+    engine_.Shutdown();
 }
 
 void P2PSkellyGame::spawnStaticWorld() {
-    Platform* platform1 = new Platform(300, 800, 300, 75, false, GetRootTimeline(), GetRenderer());
+    Platform* platform1 = new Platform(300, 800, 300, 75, false, engine_.GetRootTimeline(), engine_.GetRenderer());
     platform1->hasPhysics = false; platform1->affectedByGravity = false; platform1->isStatic = true;
-    GetEntityManager()->AddEntity(platform1);
+    engine_.GetEntityManager()->AddEntity(platform1);
 
-    Platform* platform2 = new Platform(800, 650, 300, 75, true, GetRootTimeline(), GetRenderer());
+    Platform* platform2 = new Platform(800, 650, 300, 75, true, engine_.GetRootTimeline(), engine_.GetRenderer());
     platform2->hasPhysics = true;  platform2->affectedByGravity = false; platform2->isStatic = true;
-    GetEntityManager()->AddEntity(platform2);
+    engine_.GetEntityManager()->AddEntity(platform2);
 
-    SDL_Texture* platformTexture = LoadTexture(GetRenderer(),
+    SDL_Texture* platformTexture = LoadTexture(engine_.GetRenderer(),
         "media/cartooncrypteque_platform_basicground_idle.bmp");
     if (platformTexture) {
         Texture tex = { platformTexture, 1, 1, 200, 20, true };
@@ -103,20 +103,20 @@ void P2PSkellyGame::spawnStaticWorld() {
 
 Entity* P2PSkellyGame::spawnPlayerFor(int peerId, float x, float y) {
     Timeline* tl = (peerId == myId_ && authority_)
-                 ? new Timeline(authorityAnimMul_, GetRootTimeline())
-                 : GetRootTimeline();
+                 ? new Timeline(authorityAnimMul_, engine_.GetRootTimeline())
+                 : engine_.GetRootTimeline();
 
-    TestEntity* e = new TestEntity(x, y, tl, GetRenderer());
+    TestEntity* e = new TestEntity(x, y, tl, engine_.GetRenderer());
     e->hasPhysics = true;
 
-    SDL_Texture* entityTexture = LoadTexture(GetRenderer(),
+    SDL_Texture* entityTexture = LoadTexture(engine_.GetRenderer(),
         "media/cartooncrypteque_character_skellywithahat_idleright.bmp");
     if (entityTexture) {
         Texture tex = { entityTexture, 8, 0, 512, 512, true };
         e->SetTexture(0, &tex);
     }
 
-    GetEntityManager()->AddEntity(e);
+    engine_.GetEntityManager()->AddEntity(e);
     peerToEntity_[peerId] = e;
     std::cout << "[P2PMain] Spawned player for peer " << peerId << " at (" << x << "," << y << ")\n";
     return e;
@@ -126,46 +126,14 @@ void P2PSkellyGame::despawnPlayerFor(int peerId) {
     auto it = peerToEntity_.find(peerId);
     if (it == peerToEntity_.end()) return;
     Entity* e = it->second;
-    GetEntityManager()->RemoveEntity(e);
+    engine_.GetEntityManager()->RemoveEntity(e);
     delete e;
     peerToEntity_.erase(it);
     std::cout << "[P2PMain] Despawned player for peer " << peerId << "\n";
-    publishStateNow(); // propagate removal immediately
+    node_.PublishStateNow(&engine_); // propagate removal immediately
 }
 
-void P2PSkellyGame::applyActions(Entity* e, const RemoteInput& in) {
-    if (!e) return;
-    if (in.moveLeft && in.moveRight)      e->OnActivity("IDLE");
-    else if (in.moveLeft)                 e->OnActivity("MOVE_LEFT");
-    else if (in.moveRight)                e->OnActivity("MOVE_RIGHT");
-    else                                  e->OnActivity("IDLE");
-    if (in.jump)                          e->OnActivity("JUMP");
-}
 
-std::string P2PSkellyGame::serializeEntities(const std::vector<Entity*>& entities) {
-    std::ostringstream ss;
-    for (size_t i=0;i<entities.size();++i) {
-        const Entity* e = entities[i];
-        ss << e->GetId() << ","
-           << e->entityType << ","
-           << e->position.x << ","
-           << e->position.y << ","
-           << e->dimensions.x << ","
-           << e->dimensions.y << ","
-           << e->velocity.x  << ","
-           << e->velocity.y  << ","
-           << e->currentTextureState << ","
-           << e->currentFrame << ","
-           << (e->isVisible ? 1 : 0);
-        if (i+1<entities.size()) ss << "\n";
-    }
-    return ss.str();
-}
-
-void P2PSkellyGame::publishStateNow() {
-    auto& entities = GetEntityManager()->getEntityVectorRef();
-    node_.publish(std::string("STATE\n") + serializeEntities(entities));
-}
 
 Entity* P2PSkellyGame::ensureEntityFor(const std::string& type, int remoteId) {
     auto it = idToEntity_.find(remoteId);
@@ -180,7 +148,7 @@ Entity* P2PSkellyGame::ensureEntityFor(const std::string& type, int remoteId) {
     if (fit == factory_.end()) return nullptr;
 
     Entity* e = fit->second();
-    GetEntityManager()->AddEntity(e);
+    engine_.GetEntityManager()->AddEntity(e);
     idToEntity_[remoteId] = e;
     return e;
 }
@@ -232,18 +200,7 @@ void P2PSkellyGame::processState(const std::string& payload) {
     for (int rid : toErase) idToEntity_.erase(rid);
 }
 
-void P2PSkellyGame::sendConnect()    { std::ostringstream s; s << "CONNECT:"    << myId_; node_.publish(s.str()); }
-void P2PSkellyGame::sendDisconnect() { std::ostringstream s; s << "DISCONNECT:" << myId_; node_.publish(s.str()); }
 
-void P2PSkellyGame::sendActions(bool left, bool right, bool jump) {
-    std::ostringstream s;
-    s << "ACTIONS:" << myId_ << ":";
-    bool first=true;
-    if (left)  { if(!first) s<<","; s<<"MOVE_LEFT";  first=false; }
-    if (right) { if(!first) s<<","; s<<"MOVE_RIGHT"; first=false; }
-    if (jump)  { if(!first) s<<","; s<<"JUMP"; }
-    node_.publish(s.str());
-}
 
 void P2PSkellyGame::onPeerMessage(const std::string& s) {
     // Authority handles CONNECT/DISCONNECT/ACTIONS
@@ -257,7 +214,7 @@ void P2PSkellyGame::onPeerMessage(const std::string& s) {
             }
             if (peerToEntity_.find(pid) == peerToEntity_.end()) {
                 spawnPlayerFor(pid, 1400, 100);
-                publishStateNow(); // push spawn immediately
+                node_.PublishStateNow(&engine_); // push spawn immediately
             }
             return;
         }
@@ -278,20 +235,18 @@ void P2PSkellyGame::onPeerMessage(const std::string& s) {
             if (a!=std::string::npos && b!=std::string::npos) {
                 int pid = std::stoi(s.substr(a+1, b-(a+1)));
                 std::string list = s.substr(b+1);
-                RemoteInput in{};
+                std::vector<std::string> actions;
                 std::istringstream ls(list);
                 std::string tok;
                 while (std::getline(ls, tok, ',')) {
-                    if (tok=="MOVE_LEFT")      in.moveLeft  = true;
-                    else if (tok=="MOVE_RIGHT") in.moveRight = true;
-                    else if (tok=="JUMP")       in.jump      = true;
+                    actions.push_back(tok);
                 }
-                inputs_[pid] = in;
+                inputs_[pid] = actions;
 
                 // Backstop: if we somehow missed CONNECT, spawn on first ACTIONS
                 if (peerToEntity_.find(pid) == peerToEntity_.end()) {
                     spawnPlayerFor(pid, 1400, 100);
-                    publishStateNow();
+                    node_.PublishStateNow(&engine_);
                 }
             }
             return;
@@ -324,7 +279,7 @@ void P2PSkellyGame::RunLoop() {
         float dt = std::chrono::duration<float>(now - lastTick).count();
         lastTick = now;
 
-        GetInput()->Update();
+        engine_.GetInput()->Update();
 
         // Recompute authority (lowest known ID)
         otherId_ = node_.otherId();
@@ -339,43 +294,41 @@ void P2PSkellyGame::RunLoop() {
                 if (otherId_ != -1 && peerToEntity_.find(otherId_)==peerToEntity_.end())
                     spawnPlayerFor(otherId_, 1400, 100);
                 worldSpawned_ = true;
-                publishStateNow();
+                node_.PublishStateNow(&engine_);
                 std::cout << "[P2PMain] World initialized after authority switch\n";
             }
         }
 
-        // Read keys
-        const bool* keys = SDL_GetKeyboardState(nullptr);
-        bool leftHeld  = keys[SDL_SCANCODE_A] || keys[SDL_SCANCODE_LEFT];
-        bool rightHeld = keys[SDL_SCANCODE_D] || keys[SDL_SCANCODE_RIGHT];
-        bool jumpHeld  = keys[SDL_SCANCODE_SPACE];
+        // Get active actions
+        std::vector<std::string> activeActions = engine_.GetInput()->GetActiveActions();
 
         if (authority_) {
             // Apply inputs to players (including ours)
-            inputs_[myId_] = RemoteInput{leftHeld, rightHeld, jumpHeld};
+            inputs_[myId_] = activeActions;
 
             for (auto& kv : inputs_) {
                 int pid = kv.first;
-                RemoteInput in = kv.second;
+                std::vector<std::string> actions = kv.second;
                 Entity* ePlayer = nullptr;
                 auto it = peerToEntity_.find(pid);
                 if (it != peerToEntity_.end()) ePlayer = it->second;
-                applyActions(ePlayer, in);
+                
+                node_.ApplyActions(ePlayer, actions);
             }
 
             // Advance game on authority
-            auto& entities = GetEntityManager()->getEntityVectorRef();
+            auto& entities = engine_.GetEntityManager()->getEntityVectorRef();
             for (auto* ent : entities) {
-                ent->Update(dt, GetInput(), GetEntityManager());
-                if (ent->hasPhysics) GetPhysics()->ApplyPhysics(ent, dt);
+                ent->Update(dt, engine_.GetInput(), engine_.GetEntityManager());
+                if (ent->hasPhysics) engine_.GetPhysics()->ApplyPhysics(ent, dt);
             }
-            GetCollision()->ProcessCollisions(entities);
+            engine_.GetCollision()->ProcessCollisions(entities);
 
             // Broadcast STATE ~20Hz
             uint64_t ms = nowMs();
             if (ms - lastBroadcastMs_ >= 50) {
                 lastBroadcastMs_ = ms;
-                node_.publish(std::string("STATE\n") + serializeEntities(entities));
+                node_.PublishStateNow(&engine_);
             }
 
         } else {
@@ -403,10 +356,10 @@ void P2PSkellyGame::RunLoop() {
             }
 
             // Only update non-player types locally to avoid fighting server anim state
-            auto& entities = GetEntityManager()->getEntityVectorRef();
+            auto& entities = engine_.GetEntityManager()->getEntityVectorRef();
             for (auto* ent : entities) {
                 if (ent->entityType == "Platform") {
-                    ent->Update(dt, GetInput(), GetEntityManager());
+                    ent->Update(dt, engine_.GetInput(), engine_.GetEntityManager());
                 }
             }
 
@@ -414,19 +367,19 @@ void P2PSkellyGame::RunLoop() {
             uint64_t ms = nowMs();
             if (ms - lastInputSendMs_ >= 50) {
                 lastInputSendMs_ = ms;
-                sendActions(leftHeld, rightHeld, jumpHeld);
+                node_.SendActions(myId_, activeActions);
             }
         }
 
         // Render
-        auto& ents = GetEntityManager()->getEntityVectorRef();
-        Render(ents);
+        auto& ents = engine_.GetEntityManager()->getEntityVectorRef();
+        engine_.Render(ents);
 
         SDL_Delay(1);
     }
 
     // Inform authority we are leaving (if we are a client)
-    if (!authority_) sendDisconnect();
+        if (!authority_) node_.SendDisconnect(myId_);
 
     stop();
 }

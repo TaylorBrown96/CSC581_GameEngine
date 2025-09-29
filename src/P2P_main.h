@@ -12,9 +12,9 @@
 #include <vector>
 #include <set>
 
-class P2PSkellyGame : public GameEngine {
+class P2PSkellyGame {
 public:
-    P2PSkellyGame() : GameEngine(false) {}
+    P2PSkellyGame() : engine_(false) {}
     ~P2PSkellyGame() { stop(); }
 
     bool Boot(const char* title = "P2P Skelly (Authority)",
@@ -28,6 +28,9 @@ public:
     void SetAuthorityAnimMultiplier(float mul) { authorityAnimMul_ = mul; }
 
 private:
+    // Game Engine
+    GameEngine engine_;
+    
     // Networking
     P2PNode node_;
     bool authority_ = false;
@@ -40,8 +43,7 @@ private:
     std::mutex peersMtx_;
     std::vector<int> connectedPeers_;
     std::unordered_map<int, Entity*> peerToEntity_;
-    struct RemoteInput { bool moveLeft=false, moveRight=false, jump=false; };
-    std::unordered_map<int, RemoteInput> inputs_;
+    std::unordered_map<int, std::vector<std::string>> inputs_;
 
     // Client-side
     std::unordered_map<std::string, std::function<Entity*()>> factory_;
@@ -60,12 +62,6 @@ private:
 
     // Helpers
     void onPeerMessage(const std::string& s);
-    void sendConnect();
-    void sendDisconnect();
-    void sendActions(bool left, bool right, bool jump);
-    std::string serializeEntities(const std::vector<Entity*>& ents);
-    void applyActions(Entity* e, const RemoteInput& in);
-    void publishStateNow(); // immediate push
 
     // Spawns (authority)
     Entity* spawnPlayerFor(int peerId, float x, float y);
