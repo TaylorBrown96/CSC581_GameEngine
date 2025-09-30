@@ -7,6 +7,7 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
+#include "GameEngine.h"
 
 // Reusable client-side template class a game can subclass/use.
 // Responsibilities:
@@ -38,7 +39,7 @@ public:
 
     int otherId() const { return otherId_; }
 
-    bool start(const Config& cfg = Config{});
+    bool start(const Config& cfg);
     void stop();
 
     // Publish a string payload to all peers (via this node's PUB)
@@ -51,6 +52,18 @@ public:
     int  peerId() const { return id_; }
     bool isRunning() const { return running_; }
     bool isAuthority() const { return amAuthority_; } // lowest id of first two peers
+
+    // Entity serialization and publishing
+    std::string SerializeEntities(GameEngine* engine);
+    void PublishStateNow(GameEngine* engine);
+    
+    // Action publishing and application
+    void SendActions(int peerId, const std::vector<std::string>& actions);
+    void ApplyActions(Entity* entity, const std::vector<std::string>& actions);
+    
+    // Connection management
+    void SendConnect(int peerId);
+    void SendDisconnect(int peerId);
 
 private:
     void trackerThreadFunc();
