@@ -51,8 +51,8 @@ set(REQUIRED_SOURCES
   src/EntityManager.cpp
   src/main.cpp
   src/GameEngine.cpp
-  src/Networking_SC/GameServer.cpp
-  src/Networking_SC/GameClient.cpp
+  src/GameServer.cpp
+  src/GameClient.cpp
   src/Input.cpp
   src/Render.cpp
   src/Physics.cpp
@@ -71,8 +71,8 @@ endforeach()
 
 set(ENGINE_HEADERS
   src/GameEngine.h
-  src/Networking_SC/GameServer.h
-  src/Networking_SC/GameClient.h
+  src/GameServer.h
+  src/GameClient.h
   src/Input.h
   src/Render.h
   src/Physics.h
