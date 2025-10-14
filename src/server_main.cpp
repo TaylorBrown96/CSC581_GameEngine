@@ -7,43 +7,6 @@
 #include <chrono>
 #include "main.h"
 
-/*
- * Example of how developers can create their own custom player entity class:
- * 
- * class MyCustomPlayerEntity : public Entity {
- * public:
- *     MyCustomPlayerEntity(const std::string& clientId, SDL_Renderer* renderer) 
- *         : Entity(100, 100, 64, 64) { // Default spawn position
- *         entityType = "CustomPlayer_" + clientId;
- *         hasPhysics = true;
- *         affectedByGravity = true;
- *         
- *         // Load custom texture using the renderer
- *         if (renderer) {
- *             SDL_Texture* playerTexture = LoadTexture(renderer, "media/player_texture.bmp");
- *             if (playerTexture) {
- *                 Texture tex = {
- *                     .sheet = playerTexture,
- *                     .num_frames_x = 4,
- *                     .num_frames_y = 1,
- *                     .frame_width = 64,
- *                     .frame_height = 64,
- *                     .loop = true
- *                 };
- *                 SetTexture(0, &tex);
- *             }
- *         }
- *     }
- *     
- *     void Update(float deltaTime, InputManager* input, EntityManager* entityMgr) override {
- *         // Add custom player logic here
- *         Entity::Update(deltaTime, input, entityMgr);
- *     }
- * };
- * 
- * Then in the factory function, you would use:
- * return new MyCustomPlayerEntity(clientId, renderer);
- */
 
 // Global server pointer for signal handling
 GameServer* g_server = nullptr;
