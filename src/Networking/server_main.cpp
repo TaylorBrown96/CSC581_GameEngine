@@ -5,7 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include "main.h"
+#include "../main.h"
 
 
 // Global server pointer for signal handling

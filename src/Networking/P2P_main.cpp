@@ -1,7 +1,7 @@
 // 
-#include <GameEngine.h>
-#include <P2Phandler.h>
-#include "main.h"
+#include "Core/GameEngine.h"
+#include "P2PHandler.h"
+#include "../main.h"
 #include <iostream>
 #include <sstream>
 #include <chrono>

@@ -1,6 +1,6 @@
 #pragma once
-#include "Entity.h"
-#include "JobSystem.h"
+#include "Entities/Entity.h"
+#include "Core/JobSystem.h"
 #include <vector>
 
 class PhysicsSystem {

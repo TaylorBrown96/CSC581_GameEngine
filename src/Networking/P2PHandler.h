@@ -1,6 +1,6 @@
 
 #pragma once
-#include "GameEngine.h"
+#include "Core/GameEngine.h"
 
 #include "./p2p/P2PNode.h"
 #include <SDL3/SDL.h>

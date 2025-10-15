@@ -48,17 +48,17 @@ endif()
 
 # ---------------- Engine sources ----------------
 set(REQUIRED_SOURCES
-  src/EntityManager.cpp
+  src/Entities/EntityManager.cpp
   src/main.cpp
-  src/GameEngine.cpp
-  src/GameServer.cpp
-  src/GameClient.cpp
-  src/Input.cpp
-  src/Render.cpp
-  src/Physics.cpp
-  src/Collisions.cpp
-  src/vec2.cpp
-  src/JobSystem.cpp
+  src/Core/GameEngine.cpp
+  src/Networking/GameServer.cpp
+  src/Networking/GameClient.cpp
+  src/Input/Input.cpp
+  src/Core/Render.cpp
+  src/Physics/Physics.cpp
+  src/Collision/Collisions.cpp
+  src/Math/vec2.cpp
+  src/Core/JobSystem.cpp
 )
 
 set(ENGINE_SOURCES ${REQUIRED_SOURCES})
@@ -70,14 +70,22 @@ foreach(SOURCE_FILE ${OPTIONAL_SOURCES})
 endforeach()
 
 set(ENGINE_HEADERS
-  src/GameEngine.h
-  src/GameServer.h
-  src/GameClient.h
-  src/Input.h
-  src/Render.h
-  src/Physics.h
-  src/Collisions.h
-  src/Entity.h
+  src/Core/GameEngine.h
+  src/Networking/GameServer.h
+  src/Networking/GameClient.h
+  src/Input/Input.h
+  src/Core/Render.h
+  src/Physics/Physics.h
+  src/Collision/Collisions.h
+  src/Entities/Entity.h
+  src/Timeline/Timeline.h
+  src/Core/SharedData.h
+  src/Core/JobSystem.h
+  src/Math/vec2.h
+  src/Networking/P2PHandler.h
+  src/Networking/p2p/P2PNode.h
+  src/Networking/p2p/P2PTracker.h
+  src/main.h
 )
 
 # ---------------- Core library (no main.cpp) ----------------
@@ -96,28 +104,28 @@ add_executable(GameEngine src/main.cpp)
 target_include_directories(GameEngine PRIVATE src)
 target_link_libraries(GameEngine PRIVATE EngineCore)
 
-add_executable(GameServer src/server_main.cpp)
+add_executable(GameServer src/Networking/server_main.cpp)
 target_include_directories(GameServer PRIVATE src)
 target_link_libraries(GameServer PRIVATE EngineCore)
 
-add_executable(GameClient src/client_main.cpp)
+add_executable(GameClient src/Networking/client_main.cpp)
 target_include_directories(GameClient PRIVATE src)
 target_link_libraries(GameClient PRIVATE EngineCore)
 
 # --- P2P Skelly demo (authority-based) ---
 add_executable(P2PSkelly
-  src/P2PHandler.cpp
-  src/P2P_main.cpp
-  src/p2p/P2PNode.cpp         # compile P2P node into this target
+  src/Networking/P2PHandler.cpp
+  src/Networking/P2P_main.cpp
+  src/Networking/p2p/P2PNode.cpp         # compile P2P node into this target
 )
 target_include_directories(P2PSkelly PRIVATE src)
 target_link_libraries(P2PSkelly PRIVATE EngineCore)
 target_compile_definitions(P2PSkelly PRIVATE BUILD_P2P_MAIN_STANDALONE)
 
 # --- P2P Tracker (discovery only) ---
-# Requires a tiny main at src/p2p/tracker_main.cpp
+# Requires a tiny main at src/Networking/p2p/tracker_main.cpp
 add_executable(P2PTracker
-  src/p2p/tracker_main.cpp
+  src/Networking/p2p/tracker_main.cpp
 )
 target_include_directories(P2PTracker PRIVATE src)
 target_link_libraries(P2PTracker PRIVATE libzmq cppzmq)

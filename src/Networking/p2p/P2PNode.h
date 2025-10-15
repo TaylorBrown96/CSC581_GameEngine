@@ -7,7 +7,7 @@
 #include <mutex>
 #include <functional>
 #include <unordered_map>
-#include "GameEngine.h"
+#include "Core/GameEngine.h"
 
 // Reusable client-side template class a game can subclass/use.
 // Responsibilities:
