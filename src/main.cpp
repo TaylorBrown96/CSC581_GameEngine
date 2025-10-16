@@ -13,20 +13,17 @@ int main(int argc, char *argv[]) {
   engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
   Timeline *halfTimeline = new Timeline(0.5, engine.GetRootTimeline());
   Timeline *doubleTimeline = new Timeline(2.0, engine.GetRootTimeline());
+  (void)doubleTimeline; // unused for now
+  
   // Create entities
   TestEntity *testEntity = new TestEntity(100, 100, halfTimeline, engine.GetRenderer());
-  testEntity->hasPhysics = true;  // Enable physics for TestEntity
+  // TestEntity already enables physics in its constructor
 
   Platform *platform1 = new Platform(300, 800, 300, 75, false, halfTimeline, engine.GetRenderer());
-  platform1->hasPhysics = false;         // no integration
-  platform1->affectedByGravity = false;  // no gravity
-  platform1->isStatic = true;
+  // platform1 has collision enabled but no physics (static platform)
 
   Platform *platform2 = new Platform(800, 650, 300, 75, true, engine.GetRootTimeline(), engine.GetRenderer());
-  platform2->hasPhysics = true;  // we want horizontal motion we code ourselves
-  platform2->affectedByGravity = false;  // but no falling
-  platform2->isStatic =
-      true;  // treat as static for collisions if you have special handling
+  // platform2 has collision and physics enabled (moving platform)
 
   // Add entities to the engine
   engine.GetEntityManager()->AddEntity(testEntity);

@@ -12,11 +12,11 @@
 void p_makeMap(GameEngine* eng) {
 
     Platform* platform1 = new Platform(300, 800, 300, 75, false, eng->GetRootTimeline(), eng->GetRenderer());
-    platform1->hasPhysics = false; platform1->affectedByGravity = false; platform1->isStatic = true;
+    // platform1 has collision enabled but no physics (static platform)
     eng->GetEntityManager()->AddEntity(platform1);
 
     Platform* platform2 = new Platform(800, 650, 300, 75, true, eng->GetRootTimeline(), eng->GetRenderer());
-    platform2->hasPhysics = true;  platform2->affectedByGravity = false; platform2->isStatic = true;
+    // platform2 has collision and physics enabled (moving platform)
     eng->GetEntityManager()->AddEntity(platform2);
 
     SDL_Texture* platformTexture = LoadTexture(eng->GetRenderer(),
@@ -36,7 +36,7 @@ Entity* p_makePlayer(GameEngine* eng, int peerId, int myId, bool auth) {
                  : eng->GetRootTimeline();
 
     TestEntity* e = new TestEntity(100, 100, tl, eng->GetRenderer());
-    e->hasPhysics = true;
+    // TestEntity already enables physics in its constructor
 
     SDL_Texture* entityTexture = LoadTexture(eng->GetRenderer(),
         "media/cartooncrypteque_character_skellywithahat_idleright.bmp");
@@ -58,7 +58,7 @@ int main() {
     // Factories used by clients to reconstruct entities from STATE
     auto makePlayer = [](GameEngine* ge) -> Entity* {
         auto* e = new TestEntity(100, 100, ge->GetRootTimeline(), ge->GetRenderer());
-        e->hasPhysics = true;
+        // TestEntity already enables physics in its constructor
         SDL_Texture* t = LoadTexture(ge->GetRenderer(),
             "media/cartooncrypteque_character_skellywithahat_idleright.bmp");
         if (t) { Texture tex = { t, 8, 0, 512, 512, true }; e->SetTexture(0, &tex); }
@@ -71,7 +71,7 @@ int main() {
 
     handler.factory_["Platform"] = [](GameEngine* eng) -> Entity* {
         Platform* p = new Platform(0,0,200,20,false, eng->GetRootTimeline(), eng->GetRenderer());
-        p->hasPhysics = false; p->affectedByGravity = false; p->isStatic = true;
+        // Platform has collision enabled but no physics (static platform)
         SDL_Texture* t = LoadTexture(eng->GetRenderer(), "media/cartooncrypteque_platform_basicground_idle.bmp");
         if (t) { Texture tex = { t, 1, 1, 200, 20, true }; p->SetTexture(0, &tex); }
         return p;

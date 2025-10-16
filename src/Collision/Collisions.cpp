@@ -23,16 +23,22 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
       Entity *A = entities[i];
       Entity *B = entities[j];
 
+      if (!A->collisionEnabled || !B->collisionEnabled)
+        continue;
+
       SDL_FRect Ab = A->GetBounds();
       SDL_FRect Bb = B->GetBounds();
       if (!SDL_HasRectIntersectionFloat(&Ab, &Bb)) continue;
 
       // Decide dynamic vs static priority
-      Entity *dyn = (A->isStatic && !B->isStatic) ? B : A;
-      Entity *stat = (A->isStatic && !B->isStatic) ? A : B;
+      bool A_isKinematic = A->getComponent<CollisionComponent>("collision").isKinematic;
+      bool B_isKinematic = B->getComponent<CollisionComponent>("collision").isKinematic;
+      
+      Entity *dyn = (A_isKinematic && !B_isKinematic) ? B : A;
+      Entity *stat = (A_isKinematic && !B_isKinematic) ? A : B;
 
       // If both are dynamic or both static, just treat A as dyn, B as stat
-      if (A->isStatic == B->isStatic) {
+      if (A_isKinematic == B_isKinematic) {
         dyn = A;
         stat = B;
       }
@@ -70,15 +76,22 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
 
       sb_collision_normal = neg(db_collision_normal);
 
-      if (!dyn->isStatic && !stat->isStatic) {
-        stat->position = add(stat->position, mul(minimum_penetration * 0.5f,
-                                                 sb_collision_normal));
-        dyn->position = add(dyn->position, mul(minimum_penetration * 0.5f,
-                                               db_collision_normal));
-      } else {
-        dyn->position =
-            add(dyn->position, mul(minimum_penetration, db_collision_normal));
+      CollisionComponent& dynCollisionComponent = dyn->getComponent<CollisionComponent>("collision");
+      CollisionComponent& statCollisionComponent = stat->getComponent<CollisionComponent>("collision");
+
+      // If both entities are not ghost entities, resolve the collision
+      if(!dynCollisionComponent.ghostEntity && !statCollisionComponent.ghostEntity) {
+        if (!dynCollisionComponent.isKinematic && !statCollisionComponent.isKinematic) {
+          stat->position = add(stat->position, mul(minimum_penetration * 0.5f,
+                                                   sb_collision_normal));
+          dyn->position = add(dyn->position, mul(minimum_penetration * 0.5f,
+                                                 db_collision_normal));
+        } else {
+          dyn->position =
+              add(dyn->position, mul(minimum_penetration, db_collision_normal));
+        }
       }
+      
 
       vec2 collision_point = {.x = inter.x + 0.5f * inter.w,
                               .y = inter.y + 0.5f * inter.h};

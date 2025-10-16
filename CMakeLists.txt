@@ -82,9 +82,6 @@ set(ENGINE_HEADERS
   src/Core/SharedData.h
   src/Core/JobSystem.h
   src/Math/vec2.h
-  src/Networking/P2PHandler.h
-  src/Networking/p2p/P2PNode.h
-  src/Networking/p2p/P2PTracker.h
   src/main.h
 )
 
@@ -112,24 +109,6 @@ add_executable(GameClient src/client_main.cpp)
 target_include_directories(GameClient PRIVATE src)
 target_link_libraries(GameClient PRIVATE EngineCore)
 
-# --- P2P Skelly demo (authority-based) ---
-add_executable(P2PSkelly
-  src/Networking/P2PHandler.cpp
-  src/P2P_main.cpp
-  src/Networking/p2p/P2PNode.cpp         # compile P2P node into this target
-)
-target_include_directories(P2PSkelly PRIVATE src)
-target_link_libraries(P2PSkelly PRIVATE EngineCore)
-target_compile_definitions(P2PSkelly PRIVATE BUILD_P2P_MAIN_STANDALONE)
-
-# --- P2P Tracker (discovery only) ---
-# Requires a tiny main at src/tracker_main.cpp
-add_executable(P2PTracker
-  src/tracker_main.cpp
-)
-target_include_directories(P2PTracker PRIVATE src)
-target_link_libraries(P2PTracker PRIVATE libzmq cppzmq)
-
 # ---------------- macOS rpath (optional) ----------------
 if(APPLE)
   set_target_properties(GameEngine PROPERTIES
@@ -145,11 +124,6 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/media")
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/media $<TARGET_FILE_DIR:GameEngine>/media
     COMMENT "Copying media -> GameEngine"
-  )
-  add_custom_command(TARGET P2PSkelly POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/media $<TARGET_FILE_DIR:P2PSkelly>/media
-    COMMENT "Copying media -> P2PSkelly"
   )
 endif()
 

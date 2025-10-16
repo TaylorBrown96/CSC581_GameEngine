@@ -147,17 +147,24 @@ std::string P2PNode::SerializeEntities(GameEngine* engine) {
     auto& entities = engine->GetEntityManager()->getEntityVectorRef();
     for (size_t i = 0; i < entities.size(); ++i) {
         const Entity* e = entities[i];
+        float velX = 0.0f, velY = 0.0f;
+        if (e->physicsEnabled && e->hasComponent("physics")) {
+            auto& physics = e->getComponent<PhysicsComponent>("physics");
+            velX = physics.velocity.x;
+            velY = physics.velocity.y;
+        }
+        
         ss << e->GetId() << ","
            << e->entityType << ","
            << e->position.x << ","
            << e->position.y << ","
            << e->dimensions.x << ","
            << e->dimensions.y << ","
-           << e->velocity.x << ","
-           << e->velocity.y << ","
-           << e->currentTextureState << ","
-           << e->currentFrame << ","
-           << (e->isVisible ? 1 : 0);
+           << velX << ","
+           << velY << ","
+           << e->rendering.currentTextureState << ","
+           << e->rendering.currentFrame << ","
+           << (e->rendering.isVisible ? 1 : 0);
         if (i + 1 < entities.size()) ss << "\n";
     }
     return ss.str();
