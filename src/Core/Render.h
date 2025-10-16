@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 
-#include "Entity.h"
+#include "Entities/Entity.h"
 
 enum class ScalingMode {
   CONSTANT_SIZE,  // Pixel-based

@@ -1,6 +1,6 @@
 // GameClient.h
 #pragma once
-#include "GameEngine.h"
+#include "Core/GameEngine.h"
 #include <zmq.hpp>
 #include <string>
 #include <map>

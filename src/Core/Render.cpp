@@ -1,7 +1,7 @@
 #include "Render.h"
 
 #include <SDL3/SDL.h>
-#include <vec2.h>
+#include "Math/vec2.h"
 RenderSystem::RenderSystem(SDL_Renderer *renderer)
     : renderer(renderer),
       currentMode(ScalingMode::CONSTANT_SIZE),

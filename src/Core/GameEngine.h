@@ -4,13 +4,13 @@
 
 #include <memory>
 
-#include "Collisions.h"
-#include "Entity.h"
-#include "Input.h"
+#include "Collision/Collisions.h"
+#include "Entities/Entity.h"
+#include "Input/Input.h"
 #include "JobSystem.h"
-#include "Physics.h"
+#include "Physics/Physics.h"
 #include "Render.h"
-#include "Timeline.h"
+#include "Timeline/Timeline.h"
 #include <vector>
 
 

@@ -1,5 +1,5 @@
 // server_main.cpp - Example GameServer usage
-#include "GameServer.h"
+#include "Networking/GameServer.h"
 #include <iostream>
 #include <signal.h>
 #include <atomic>

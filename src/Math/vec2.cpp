@@ -1,4 +1,4 @@
-#include <vec2.h>
+#include "vec2.h"
 
 vec2 add(vec2 a, vec2 b) { return {.x = a.x + b.x, .y = a.y + b.y}; }
 

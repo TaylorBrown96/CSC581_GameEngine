@@ -1,7 +1,7 @@
 #include "Collisions.h"
 
 #include <SDL3/SDL.h>
-#include <vec2.h>
+#include "Math/vec2.h"
 // #include <algorithm>
 
 bool CollisionSystem::CheckCollision(const Entity *a, const Entity *b) const {

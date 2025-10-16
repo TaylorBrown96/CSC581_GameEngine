@@ -1,13 +1,13 @@
 #pragma once
-#include "Timeline.h"
+#include "Timeline/Timeline.h"
 #include <SDL3/SDL.h>
 #include <map>
 #include <string>
 
 #include <vector>
 
-#include "Input.h"
-#include "vec2.h"
+#include "Input/Input.h"
+#include "Math/vec2.h"
 
 class EntityManager;
 

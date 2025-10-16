@@ -1,5 +1,5 @@
 // client_main.cpp - Example GameClient usage
-#include "GameClient.h"
+#include "Networking/GameClient.h"
 #include <iostream>
 #include <string>
 #include "main.h"
