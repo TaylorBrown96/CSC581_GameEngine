@@ -1,8 +1,8 @@
 // client_main.cpp - Example GameClient usage
-#include "GameClient.h"
+#include "Networking/GameClient.h"
 #include <iostream>
 #include <string>
-#include "../main.h"
+#include "main.h"
 
 int main() {
     std::cout << "Starting GameClient..." << std::endl;

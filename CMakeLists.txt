@@ -104,18 +104,18 @@ add_executable(GameEngine src/main.cpp)
 target_include_directories(GameEngine PRIVATE src)
 target_link_libraries(GameEngine PRIVATE EngineCore)
 
-add_executable(GameServer src/Networking/server_main.cpp)
+add_executable(GameServer src/server_main.cpp)
 target_include_directories(GameServer PRIVATE src)
 target_link_libraries(GameServer PRIVATE EngineCore)
 
-add_executable(GameClient src/Networking/client_main.cpp)
+add_executable(GameClient src/client_main.cpp)
 target_include_directories(GameClient PRIVATE src)
 target_link_libraries(GameClient PRIVATE EngineCore)
 
 # --- P2P Skelly demo (authority-based) ---
 add_executable(P2PSkelly
   src/Networking/P2PHandler.cpp
-  src/Networking/P2P_main.cpp
+  src/P2P_main.cpp
   src/Networking/p2p/P2PNode.cpp         # compile P2P node into this target
 )
 target_include_directories(P2PSkelly PRIVATE src)
@@ -123,9 +123,9 @@ target_link_libraries(P2PSkelly PRIVATE EngineCore)
 target_compile_definitions(P2PSkelly PRIVATE BUILD_P2P_MAIN_STANDALONE)
 
 # --- P2P Tracker (discovery only) ---
-# Requires a tiny main at src/Networking/p2p/tracker_main.cpp
+# Requires a tiny main at src/tracker_main.cpp
 add_executable(P2PTracker
-  src/Networking/p2p/tracker_main.cpp
+  src/tracker_main.cpp
 )
 target_include_directories(P2PTracker PRIVATE src)
 target_link_libraries(P2PTracker PRIVATE libzmq cppzmq)

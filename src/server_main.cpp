@@ -1,11 +1,11 @@
 // server_main.cpp - Example GameServer usage
-#include "GameServer.h"
+#include "Networking/GameServer.h"
 #include <iostream>
 #include <signal.h>
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include "../main.h"
+#include "main.h"
 
 
 // Global server pointer for signal handling
