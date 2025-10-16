@@ -49,7 +49,6 @@ class Entity {
   bool hasPhysics = true;
   bool affectedByGravity = true;
   bool isStatic = false;
-  bool grounded = false;
 
   virtual bool GetSourceRect(SDL_FRect &out) const {
     (void)out;

@@ -16,8 +16,6 @@ bool CollisionSystem::CheckCollision(const SDL_FRect &a,
 }
 
 void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
-  for (auto &e : entities)
-    if (!e->isStatic) e->grounded = false;
 
   const size_t n = entities.size();
   for (size_t i = 0; i < n - 1; ++i) {
@@ -64,10 +62,8 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
         }
       } else /** top collision */ {
         if (Db.y < Sb.y) {
-          dyn->grounded = true;
           db_collision_normal = normals[3];
         } else {
-          // stat->grounded = true;
           db_collision_normal = normals[2];
         }
       }

@@ -8,6 +8,7 @@ class TestEntity : public Entity {
  private:
   Uint32 lastFrameTime;
   int animationDelay;
+  bool grounded = false;
 
   Entity *groundRef = nullptr;  // platform we're standing on (if any)
   float groundVX = 0.0f;        // platform's current x velocity
@@ -116,6 +117,7 @@ class TestEntity : public Entity {
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {
+    grounded = false;
     if (collData->normal.y == -1.0f && collData->normal.x == 0.0f) {
       grounded = true;
       velocity.y = 0.0f;
