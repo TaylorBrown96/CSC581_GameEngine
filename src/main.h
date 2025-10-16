@@ -5,22 +5,20 @@
 // #include <memory>
 
 class TestEntity : public Entity {
- private:
-  Uint32 lastFrameTime;
-  int animationDelay;
-  bool grounded = false;
-
-  Entity *groundRef = nullptr;  // platform we're standing on (if any)
-  float groundVX = 0.0f;        // platform's current x velocity
-
  public:
   TestEntity(float x, float y, Timeline *tl, SDL_Renderer *renderer) : Entity(x, y, 128, 128, tl) {
     EnablePhysics(true);
     EnableCollision(false, false);
     SetVelocity(0.0f, 0.0f);
     SetCurrentFrame(0);
-    lastFrameTime = 0;
-    animationDelay = 200;
+    
+    // Initialize components
+    setComponent("lastFrameTime", static_cast<Uint32>(0));
+    setComponent("animationDelay", 200);
+    setComponent("grounded", false);
+    setComponent("groundRef", nullptr);
+    setComponent("groundVX", 0.0f);
+    
     entityType = "TestEntity";
     SDL_Texture *entityTexture = LoadTexture(
       renderer,
@@ -42,14 +40,19 @@ class TestEntity : public Entity {
               EntityManager *entitySpawner) override {
     // Update animation
     (void) entitySpawner;
+    Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
+    int animationDelay = getComponent<int>("animationDelay");
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
       rendering.currentFrame = (rendering.currentFrame + 1) % rendering.textures[rendering.currentTextureState].num_frames_x;
       lastFrameTime = 0;
     }
+    setComponent("lastFrameTime", lastFrameTime);
 
     // Handle platform motion inheritance when no movement input is active
     // This needs to be in Update because OnActivity is only called on button press
+    bool grounded = getComponent<bool>("grounded");
+    Entity* groundRef = getComponent<Entity*>("groundRef");
     const float carrierVX = (grounded && groundRef) 
       ? groundRef->GetVelocityX() 
       : 0.0f;
@@ -73,16 +76,16 @@ class TestEntity : public Entity {
 
     // Reset if falls off bottom (demonstrates physics working)
     if (!grounded) {  // however you detect "no ground this frame"
-      groundRef = nullptr;
-      groundVX = 0.0f;
+      setComponent("groundRef", nullptr);
+      setComponent("groundVX", 0.0f);
     }
     if (position.y > 1080) {  // fell off bottom of screen
       position.x = 100;
       position.y = 100;
       SetVelocityY(0.0f);
-      grounded = false;
-      groundRef = nullptr;
-      groundVX = 0.0f;
+      setComponent("grounded", false);
+      setComponent("groundRef", nullptr);
+      setComponent("groundVX", 0.0f);
     }
     
 
@@ -104,6 +107,8 @@ class TestEntity : public Entity {
   void OnActivity(const std::string& actionName) override {
     // speeds
     constexpr float runSpeed = 200.0f;
+    bool grounded = getComponent<bool>("grounded");
+    Entity* groundRef = getComponent<Entity*>("groundRef");
     
     if (actionName == "MOVE_LEFT") {
       // Move left at constant speed, ignoring platform motion
@@ -113,7 +118,7 @@ class TestEntity : public Entity {
       SetVelocityX(runSpeed);
     } else if (actionName == "JUMP" && grounded) {
       SetVelocityY(-1500.0f);
-      grounded = false;
+      setComponent("grounded", false);
     } else {
       const float carrierVX = (grounded && groundRef) 
         ? groundRef->GetVelocityX() 
@@ -123,11 +128,11 @@ class TestEntity : public Entity {
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {    
-    grounded = false;
+    setComponent("grounded", false);
     if (collData->normal.y == -1.0f && collData->normal.x == 0.0f) {
-      grounded = true;
+      setComponent("grounded", true);
       SetVelocityY(0.0f);
-      groundRef = other;
+      setComponent("groundRef", other);
     } else if (collData->normal.x != 0.0f) {
       SetVelocityX(0.0f);  // or keep desiredVX if you resolve penetration separately
     }
