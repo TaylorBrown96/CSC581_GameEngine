@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <variant>
+#include <mutex>
 
 #include "Input/Input.h"
 #include "Math/vec2.h"
@@ -63,6 +64,7 @@ class Entity {
 
  protected:
   std::map<std::string, Component> components;
+  mutable std::mutex componentMutex;  // Protects access to components map
 
  public:
   std::string entityType;
@@ -188,16 +190,19 @@ class Entity {
 
 
   bool hasComponent(const std::string& key) const {
+    std::lock_guard<std::mutex> lock(componentMutex);
     return components.find(key) != components.end();
   }
   
   void setComponent(const std::string& key, Component value) {
+    std::lock_guard<std::mutex> lock(componentMutex);
     components[key] = value;
   } 
  
 
   template <typename T>
   T& getComponent(const std::string& key) {
+      std::lock_guard<std::mutex> lock(componentMutex);
       return std::get<T>(components.at(key));
   }
 
