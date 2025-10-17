@@ -341,17 +341,24 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
         Entity* entity = entities[i];
         
         // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
+        float velX = 0.0f, velY = 0.0f;
+        if (entity->physicsEnabled) {
+            auto& physics = entity->getComponent<PhysicsComponent>("physics");
+            velX = physics.velocity.x;
+            velY = physics.velocity.y;
+        }
+        
         ss << entity->GetId() << ","
            << entity->entityType << ","
            << entity->position.x << ","
            << entity->position.y << ","
            << entity->dimensions.x << ","
            << entity->dimensions.y << ","
-           << entity->velocity.x << ","
-           << entity->velocity.y << ","
-           << entity->currentTextureState << ","
-           << entity->currentFrame << ","
-           << (entity->isVisible ? 1 : 0);
+           << velX << ","
+           << velY << ","
+           << entity->rendering.currentTextureState << ","
+           << entity->rendering.currentFrame << ","
+           << (entity->rendering.isVisible ? 1 : 0);
         
         // Add newline to separate entities
         if (i < entities.size() - 1) {

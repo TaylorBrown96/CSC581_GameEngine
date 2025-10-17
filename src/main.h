@@ -5,19 +5,20 @@
 // #include <memory>
 
 class TestEntity : public Entity {
- private:
-  Uint32 lastFrameTime;
-  int animationDelay;
-
-  Entity *groundRef = nullptr;  // platform we're standing on (if any)
-  float groundVX = 0.0f;        // platform's current x velocity
-
  public:
   TestEntity(float x, float y, Timeline *tl, SDL_Renderer *renderer) : Entity(x, y, 128, 128, tl) {
-    velocity.x = 0.0f;  // Move right at 150 pixels per second
-    currentFrame = 0;
-    lastFrameTime = 0;
-    animationDelay = 200;
+    EnablePhysics(true);
+    EnableCollision(false, false);
+    SetVelocity(0.0f, 0.0f);
+    SetCurrentFrame(0);
+    
+    // Initialize components
+    setComponent("lastFrameTime", static_cast<Uint32>(0));
+    setComponent("animationDelay", 200);
+    setComponent("grounded", false);
+    setComponent("wasGrounded", false);
+    setComponent("groundRef", static_cast<Entity*>(nullptr));
+    
     entityType = "TestEntity";
     SDL_Texture *entityTexture = LoadTexture(
       renderer,
@@ -37,26 +38,54 @@ class TestEntity : public Entity {
 
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
+    (void)entitySpawner;
+    
     // Update animation
-    (void) entitySpawner;
+    Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
+    int animationDelay = getComponent<int>("animationDelay");
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
     if (lastFrameTime >= (Uint32)animationDelay) {
-      currentFrame = (currentFrame + 1) % textures[currentTextureState].num_frames_x;
+      rendering.currentFrame = (rendering.currentFrame + 1) % rendering.textures[rendering.currentTextureState].num_frames_x;
       lastFrameTime = 0;
     }
+    setComponent("lastFrameTime", lastFrameTime);
 
-    // Handle platform motion inheritance when no movement input is active
-    // This needs to be in Update because OnActivity is only called on button press
-    const float carrierVX = (grounded && groundRef) ? groundRef->velocity.x : 0.0f;
+    // speeds
+    constexpr float runSpeed = 200.0f;
+
+    // input
+    const bool left = input->IsKeyPressed(SDL_SCANCODE_A) ||
+                      input->IsKeyPressed(SDL_SCANCODE_LEFT);
+    const bool right = input->IsKeyPressed(SDL_SCANCODE_D) ||
+                       input->IsKeyPressed(SDL_SCANCODE_RIGHT);
+
+    // Get ground reference and grounded state
+    Entity* groundRef = getComponent<Entity*>("groundRef");
+    bool grounded = getComponent<bool>("grounded");
     
-    // Check if no movement input is currently active
-    const bool left = input->IsKeyPressed(SDL_SCANCODE_A) || input->IsKeyPressed(SDL_SCANCODE_LEFT);
-    const bool right = input->IsKeyPressed(SDL_SCANCODE_D) || input->IsKeyPressed(SDL_SCANCODE_RIGHT);
-    
-    // If no movement input is active, inherit platform motion
-    // if (!left && !right) {
-    //   velocity.x = carrierVX;  // inherit platform motion when idle
-    // }
+    // carrier velocity (only meaningful when grounded on a platform)
+    const float carrierVX =
+        (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
+
+    // base desired velocity from input (world-space)
+    float desiredVX = 0.0f;
+    if (left ^ right) { // exactly one is held
+      desiredVX = left ? -runSpeed : runSpeed;
+    }
+
+    // Set velocity directly based on input state
+    if (desiredVX != 0.0f) {
+      SetVelocityX(desiredVX); // ignore platform motion while moving
+    } else {
+      SetVelocityX(carrierVX); // inherit when idle
+    }
+
+    // Jump handling
+    if (input->IsKeyPressed(SDL_SCANCODE_SPACE) && grounded) {
+      SetVelocityY(-1500.0f);
+      setComponent("grounded", false);
+      setComponent("wasGrounded", false);
+    }
 
     // Bounce off screen edges (demonstrates entity system working) using window
     // bounds push opposite direction
@@ -67,19 +96,16 @@ class TestEntity : public Entity {
     }
 
     // Reset if falls off bottom (demonstrates physics working)
-    if (!grounded) {  // however you detect “no ground this frame”
-      groundRef = nullptr;
-      groundVX = 0.0f;
+    if (!grounded) { // however you detect "no ground this frame"
+      setComponent("groundRef", static_cast<Entity*>(nullptr));
     }
-    if (position.y > 1080) {  // fell off bottom of screen
+    if (position.y > 1080) { // fell off bottom of screen
       position.x = 100;
       position.y = 100;
-      velocity.y = 0.0f;
-      grounded = false;
-      groundRef = nullptr;
-      groundVX = 0.0f;
+      SetVelocityY(0.0f);
+      setComponent("grounded", false);
+      setComponent("groundRef", static_cast<Entity*>(nullptr));
     }
-    
 
     // Handle pause toggle (only on key press, not while held)
     static bool pKeyWasPressed = false;
@@ -94,41 +120,45 @@ class TestEntity : public Entity {
       }
     }
     pKeyWasPressed = pKeyIsPressed;
-  }
 
-  void OnActivity(const std::string& actionName) override {
-    // speeds
-    constexpr float runSpeed = 200.0f;
-    
-    if (actionName == "MOVE_LEFT") {
-      // Move left at constant speed, ignoring platform motion
-      velocity.x = -runSpeed;
-    } else if (actionName == "MOVE_RIGHT") {
-      // Move right at constant speed, ignoring platform motion
-      velocity.x = runSpeed;
-    } else if (actionName == "JUMP" && grounded) {
-      velocity.y = -1500.0f;
-      grounded = false;
-    } else {
-      const float carrierVX = (grounded && groundRef) ? groundRef->velocity.x : 0.0f;
-      velocity.x = carrierVX;
+    // Speed up and slow down the timeline for this entity
+    static bool iKeyWasPressed = false;
+    static bool oKeyWasPressed = false;
+    static bool uKeyWasPressed = false;
+    bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
+    bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
+    bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
+    if (iKeyIsPressed && !iKeyWasPressed) {
+      timeline->setScale(timeline->getScale() - 0.5f);
     }
+    if (oKeyIsPressed && !oKeyWasPressed) {
+      timeline->setScale(timeline->getScale() + 0.5f);
+    }
+    if (uKeyIsPressed && !uKeyWasPressed) {
+      timeline->setScale(0.5f);
+    }
+    iKeyWasPressed = iKeyIsPressed;
+    oKeyWasPressed = oKeyIsPressed;
+    uKeyWasPressed = uKeyIsPressed;
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {
     if (collData->normal.y == -1.0f && collData->normal.x == 0.0f) {
-      grounded = true;
-      velocity.y = 0.0f;
-      groundRef = other;
+      bool wasGrounded = getComponent<bool>("wasGrounded");
+      if (!wasGrounded) {
+        setComponent("wasGrounded", true);
+      }
+      setComponent("grounded", true);
+      SetVelocityY(0.0f);
+      setComponent("groundRef", other);
     } else if (collData->normal.x != 0.0f) {
-      velocity.x =
-          0.0f;  // or keep desiredVX if you resolve penetration separately
+      SetVelocityX(0.0f);
     }
   }
 
   // Get current frame for rendering
   bool GetSourceRect(SDL_FRect &out) const override {
-    out = SampleTextureAt(currentFrame, 0);
+    out = SampleTextureAt(rendering.currentFrame, 0);
     return true;
   }
 };
@@ -138,17 +168,17 @@ class Platform : public Entity {
   Platform(float x, float y, float w = 200, float h = 20, bool moving = false, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr)
       : Entity(x, y, w, h, tl) {
     entityType = "Platform";
-    isStatic = true;
-    hasPhysics = false;
-    affectedByGravity = false;
-    velocity.x = moving ? -100.0f : 0.0f;
-    velocity.y = 0.0f;
+    EnableCollision(false, true);  // not a ghost, is kinematic
+    if (moving) {
+      EnablePhysics(false);  // Enable physics but no gravity
+      SetVelocity(-100.0f, 0.0f);
+    }
     if (renderer) {
       SDL_Texture *platformTexture =
       LoadTexture(renderer,
                   "media/cartooncrypteque_platform_basicground_idle.bmp");
       if (platformTexture) {
-        textures[0] = {
+        rendering.textures[0] = {
           .sheet = platformTexture,
           .num_frames_x = 1,
           .num_frames_y = 1,
@@ -163,9 +193,10 @@ class Platform : public Entity {
   void Update(float dt, InputManager *input,
               EntityManager *entitySpawner) override {
     (void)input;
-    (void)entitySpawner;
+    (void)entitySpawner;  
+    if(!physicsEnabled) return;
     // Horizontal-only motion for the moving platform
-    position = add(position, mul(dt, velocity));
+    position = add(position, mul(dt, {GetVelocityX(), GetVelocityY()}));
     if (position.x < 0) {
       position.x = 0;
       LeftRightOccilate(this);
@@ -178,6 +209,6 @@ class Platform : public Entity {
   void LeftRightOccilate(Entity *other) {
     (void)other;
     // multiply the xvelocity by -1 to reverse direction
-    velocity.x *= -1;
+    SetVelocityX(-GetVelocityX());
   }
 };

@@ -44,16 +44,11 @@ int main() {
     });
 
     Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
-    platform1->hasPhysics = false;         // no integration
-    platform1->affectedByGravity = false;  // no gravity
-    platform1->isStatic = true;
+    // platform1 has collision enabled but no physics (static platform)
     server.GetEntityManager()->AddEntity(platform1);
 
     Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
-    platform2->hasPhysics = true;  // we want horizontal motion we code ourselves
-    platform2->affectedByGravity = false;  // but no gravity
-    platform2->isStatic =
-        true;  // treat as static for collisions if you have special handling
+    // platform2 has collision and physics enabled (moving platform)
     server.GetEntityManager()->AddEntity(platform2);
     
     // Start the server with publisher on port 5555 and pull socket on port 5556

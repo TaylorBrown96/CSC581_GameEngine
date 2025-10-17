@@ -39,8 +39,8 @@ void RenderSystem::RenderEntity(const Entity *entity) {
   // Use your entity's texture member directly to match your current codebase.
   // If you have an accessor, replace with: SDL_Texture* tex =
   // entity->GetTexture();
-  auto it = entity->textures.find(entity->currentTextureState);
-  if (it == entity->textures.end()) {
+  auto it = entity->rendering.textures.find(entity->rendering.currentTextureState);
+  if (it == entity->rendering.textures.end()) {
     return;
   }
   SDL_Texture *tex = it->second.sheet;
@@ -61,8 +61,8 @@ void RenderSystem::RenderEntity(const Entity *entity,
                                 const SDL_FRect *sourceRect) {
   if (!entity)
     return;
-  auto it = entity->textures.find(entity->currentTextureState);
-  if (it == entity->textures.end())
+  auto it = entity->rendering.textures.find(entity->rendering.currentTextureState);
+  if (it == entity->rendering.textures.end())
     return;
   SDL_Texture *tex = it->second.sheet;
   if (!tex)
