@@ -39,6 +39,8 @@ typedef struct RenderComponent {
   std::map<int, Texture> textures;
   int currentTextureState = 0;
   int currentFrame = 0;
+  float offSetX = 0.0f;
+  float offSetY = 0.0f;
 } RenderComponent;
 
 typedef struct CollisionComponent {
@@ -98,6 +100,22 @@ class Entity {
 
   void SetVisible(bool visible) {
     rendering.isVisible = visible;
+  }
+
+  void SetOffSetX(float offSetX) {
+    rendering.offSetX = offSetX;
+  }
+
+  void SetOffSetY(float offSetY) {
+    rendering.offSetY = offSetY;
+  }
+
+  float GetOffSetX() const {
+    return rendering.offSetX;
+  }
+
+  float GetOffSetY() const {
+    return rendering.offSetY;
   }
 
   Entity(float startX = 0.0f, float startY = 0.0f, float w = 32.0f,

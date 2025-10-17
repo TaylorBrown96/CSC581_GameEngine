@@ -47,7 +47,7 @@ int main() {
     // platform1 has collision enabled but no physics (static platform)
     server.GetEntityManager()->AddEntity(platform1);
 
-    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
+    Platform *platform2 = new Platform(800, 650, 500, 75, false, server.GetRootTimeline(), server.GetRenderer());
     // platform2 has collision and physics enabled (moving platform)
     server.GetEntityManager()->AddEntity(platform2);
     
@@ -56,6 +56,16 @@ int main() {
         std::cerr << "Failed to start server" << std::endl;
         return 1;
     }
+
+    Platform *platform3 = new Platform(1300, 500, 500, 75, false, server.GetRootTimeline(), server.GetRenderer());
+    server.GetEntityManager()->AddEntity(platform3);
+
+    Platform *platform4 = new Platform(1800, 500, 500, 75, false, server.GetRootTimeline(), server.GetRenderer());
+    server.GetEntityManager()->AddEntity(platform4);
+
+    ScrollBoundary *scrollBoundary = new ScrollBoundary(950, 500, 1000, 200, server.GetRootTimeline(), server.GetRenderer());
+    server.GetEntityManager()->AddEntity(scrollBoundary);
+
     
     std::cout << "Server started successfully!" << std::endl;
     std::cout << "Publisher port: 5555" << std::endl;

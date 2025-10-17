@@ -49,6 +49,6 @@ public:
 private:
     void ProcessServerMessages();
     void ProcessStringEntityData(const std::string& entityData);
-    void SyncEntityWithStringData(Entity* entity, float x, float y, float width, float height, 
+    void SyncEntityWithStringData(Entity* entity, float x, float y, float offSetX, float offSetY, float width, float height, 
                                  float velX, float velY, int textureState, int currentFrame, bool visible);
 };

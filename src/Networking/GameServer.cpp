@@ -181,7 +181,7 @@ void GameServer::MessageProcessorThread() {
         
         if (result) {
             std::string messageStr(static_cast<char*>(message.data()), message.size());
-            std::cout << "Server received message: " << messageStr << std::endl;
+            // std::cout << "Server received message: " << messageStr << std::endl;
             
             // Add message to queue for worker threads to process
             {
@@ -241,7 +241,7 @@ void GameServer::ProcessMessage(const std::string& message) {
             std::string clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
             std::string actionsData = message.substr(secondColon + 1);
             
-            std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
+            // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
             
             // Process actions and update game state
             ProcessClientActions(clientId, actionsData);
@@ -249,7 +249,7 @@ void GameServer::ProcessMessage(const std::string& message) {
     }
     else {
         // Handle other message types
-        std::cout << "Unknown message type: " << message << std::endl;
+        // std::cout << "Unknown message type: " << message << std::endl;
     }
 }
 
@@ -352,6 +352,8 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
            << entity->entityType << ","
            << entity->position.x << ","
            << entity->position.y << ","
+           << entity->rendering.offSetX << ","
+           << entity->rendering.offSetY << ","
            << entity->dimensions.x << ","
            << entity->dimensions.y << ","
            << velX << ","

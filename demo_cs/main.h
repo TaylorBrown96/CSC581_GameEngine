@@ -18,6 +18,7 @@ class TestEntity : public Entity {
     setComponent("grounded", false);
     setComponent("wasGrounded", false);
     setComponent("groundRef", static_cast<Entity*>(nullptr));
+    setComponent("playerInputDirection", 0); // -1 for left, 0 for idle, 1 for right
     
     entityType = "TestEntity";
     SDL_Texture *entityTexture = LoadTexture(
@@ -50,55 +51,16 @@ class TestEntity : public Entity {
     }
     setComponent("lastFrameTime", lastFrameTime);
 
-    // speeds
-    constexpr float runSpeed = 200.0f;
-
-    // input
-    const bool left = input->IsKeyPressed(SDL_SCANCODE_A) ||
-                      input->IsKeyPressed(SDL_SCANCODE_LEFT);
-    const bool right = input->IsKeyPressed(SDL_SCANCODE_D) ||
-                       input->IsKeyPressed(SDL_SCANCODE_RIGHT);
-
-    // Get ground reference and grounded state
-    Entity* groundRef = getComponent<Entity*>("groundRef");
-    bool grounded = getComponent<bool>("grounded");
+    // Reset grounded state each frame (will be set by collision if on platform)
+    setComponent("grounded", false);
     
-    // carrier velocity (only meaningful when grounded on a platform)
-    const float carrierVX =
-        (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
-
-    // base desired velocity from input (world-space)
-    float desiredVX = 0.0f;
-    if (left ^ right) { // exactly one is held
-      desiredVX = left ? -runSpeed : runSpeed;
-    }
-
-    // Set velocity directly based on input state
-    if (desiredVX != 0.0f) {
-      SetVelocityX(desiredVX); // ignore platform motion while moving
-    } else {
-      SetVelocityX(carrierVX); // inherit when idle
-    }
-
-    // Jump handling
-    if (input->IsKeyPressed(SDL_SCANCODE_SPACE) && grounded) {
-      SetVelocityY(-1500.0f);
-      setComponent("grounded", false);
-      setComponent("wasGrounded", false);
-    }
-
     // Bounce off screen edges (demonstrates entity system working) using window
     // bounds push opposite direction
     if (position.x <= 0) {
       position.x = 0;
-    } else if (position.x + dimensions.x >= 1920) {
-      position.x = 1920 - dimensions.x;
     }
 
     // Reset if falls off bottom (demonstrates physics working)
-    if (!grounded) { // however you detect "no ground this frame"
-      setComponent("groundRef", static_cast<Entity*>(nullptr));
-    }
     if (position.y > 1080) { // fell off bottom of screen
       position.x = 100;
       position.y = 100;
@@ -142,6 +104,39 @@ class TestEntity : public Entity {
     uKeyWasPressed = uKeyIsPressed;
   }
 
+  void OnActivity(const std::string& actionName) override {
+    // speeds
+    constexpr float runSpeed = 200.0f;
+    
+    // Get ground reference and grounded state
+    Entity* groundRef = getComponent<Entity*>("groundRef");
+    bool grounded = getComponent<bool>("grounded");
+    
+    if (actionName == "MOVE_LEFT") {
+      // Move left at constant speed, ignoring platform motion
+      SetVelocityX(-runSpeed);
+      setComponent("playerInputDirection", -1);
+    } else if (actionName == "MOVE_RIGHT") {
+      // Move right at constant speed, ignoring platform motion
+      SetVelocityX(runSpeed);
+      setComponent("playerInputDirection", 1);
+    } else if (actionName == "JUMP" && grounded) {
+      SetVelocityY(-1500.0f);
+      setComponent("grounded", false);
+      setComponent("wasGrounded", false);
+    } else if (actionName == "IDLE") {
+      // Stop horizontal movement, inherit platform velocity when grounded
+      const float carrierVX = (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
+      SetVelocityX(carrierVX);
+      setComponent("playerInputDirection", 0);
+    } else {
+      // Default case - also treat as IDLE
+      const float carrierVX = (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
+      SetVelocityX(carrierVX);
+      setComponent("playerInputDirection", 0);
+    }
+  }
+
   void OnCollision(Entity *other, CollisionData *collData) override {
     if (collData->normal.y == -1.0f && collData->normal.x == 0.0f) {
       bool wasGrounded = getComponent<bool>("wasGrounded");
@@ -162,7 +157,6 @@ class TestEntity : public Entity {
     return true;
   }
 };
-
 class Platform : public Entity {
  public:
   Platform(float x, float y, float w = 200, float h = 20, bool moving = false, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr)
@@ -211,4 +205,38 @@ class Platform : public Entity {
     // multiply the xvelocity by -1 to reverse direction
     SetVelocityX(-GetVelocityX());
   }
+};
+
+class ScrollBoundary : public Entity {
+ public:
+  ScrollBoundary(float x, float y, float w, float h, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr)
+      : Entity(x, y, w, h, tl) {
+    entityType = "ScrollBoundary";
+    EnableCollision(true, true);
+    setComponent("enabledScroll", false);
+    SetVisible(false);
+  }
+
+  void OnCollision(Entity *other, CollisionData *collData) override {
+    if(collData->normal.x != 0.0f && other->entityType == "TestEntity") {
+      std::cout<<"OnCollision: enabledScroll: "<<getComponent<bool>("enabledScroll")<<std::endl;
+      setComponent("enabledScroll", true);
+    }
+  }
+
+  void Update(float dt, InputManager *input,
+              EntityManager *entitySpawner) override {
+    (void)input;
+    (void)dt;
+    if(getComponent<bool>("enabledScroll")) {
+      std::cout<<"enabledScroll: "<<getComponent<bool>("enabledScroll")<<std::endl;
+      for (Entity* entity : entitySpawner->getEntityVectorRef()) {
+        std::cout<<"entity: "<<entity->entityType<<std::endl;
+        entity->SetOffSetX(entity->GetOffSetX() - 900.0f);
+      }
+      setComponent("enabledScroll", false);
+      collisionEnabled = false;
+    }
+  }
+
 };
