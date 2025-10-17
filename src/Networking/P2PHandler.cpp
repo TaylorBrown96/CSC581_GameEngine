@@ -116,11 +116,11 @@ void P2PHandler::processState(const std::string& payload) {
 
         // Non-visual attributes
         e->dimensions = {w,h};
-        e->isVisible  = (vis!=0);
-        e->currentTextureState = texState;
+        e->rendering.isVisible  = (vis!=0);
+        e->rendering.currentTextureState = texState;
 
         // Apply server animation frame to avoid anomalies
-        e->currentFrame = frame;
+        e->rendering.currentFrame = frame;
 
         // Smooth target
         Smooth s; s.tx = x; s.ty = y; s.tvx = vx; s.tvy = vy; s.stamp = nowMs();
@@ -132,7 +132,7 @@ void P2PHandler::processState(const std::string& payload) {
     std::vector<int> toErase;
     for (auto& kv : idToEntity_) {
         if (!seen.count(kv.first)) {
-            kv.second->isVisible = false;
+            kv.second->rendering.isVisible = false;
             toErase.push_back(kv.first);
             smooth_.erase(kv.first);
         }
@@ -300,7 +300,9 @@ void P2PHandler::Run() {
                     float nx = e->position.x + (s.tx - e->position.x) * alpha;
                     float ny = e->position.y + (s.ty - e->position.y) * alpha;
                     e->SetPosition(nx, ny);
-                    e->velocity = { s.tvx, s.tvy };
+                    if (e->physicsEnabled && e->hasComponent("physics")) {
+                        e->getComponent<PhysicsComponent>("physics").velocity = { s.tvx, s.tvy };
+                    }
                 }
             }
 

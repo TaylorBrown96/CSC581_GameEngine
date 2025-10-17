@@ -314,10 +314,16 @@ void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, floa
     // Update entity properties from string data
     entity->SetPosition(x, y);
     entity->dimensions = {.x = width, .y = height};
-    entity->velocity = {.x = velX, .y = velY};
-    entity->currentTextureState = textureState;
-    entity->currentFrame = currentFrame;
-    entity->isVisible = visible;
+    // Update physics component if it exists
+    if (entity->physicsEnabled && entity->hasComponent("physics")) {
+        auto& physics = entity->getComponent<PhysicsComponent>("physics");
+        physics.velocity = {.x = velX, .y = velY};
+    }
+    
+    // Update rendering component
+    entity->rendering.currentTextureState = textureState;
+    entity->rendering.currentFrame = currentFrame;
+    entity->rendering.isVisible = visible;
 }
 
 void GameClient::RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor) {

@@ -2,16 +2,17 @@
 #include "Entities/Entity.h"
 
 void PhysicsSystem::ApplyPhysics(Entity *entity, float deltaTime) {
-  if (
-      !entity->hasPhysics || 
-      entity->isStatic    
-    )
-
+  if (!entity->physicsEnabled)
     return;
 
-  entity->velocity = add(entity->velocity, mul(deltaTime, entity->force));
+  // Check if entity is kinematic (static)
+  if (entity->collisionEnabled && 
+      entity->getComponent<CollisionComponent>("collision").isKinematic)
+    return;
 
-  entity->position = add(entity->position, mul(deltaTime, entity->velocity));
+  PhysicsComponent& physics = entity->getComponent<PhysicsComponent>("physics");
+  physics.velocity = add(physics.velocity, mul(deltaTime, physics.force));
+  entity->position = add(entity->position, mul(deltaTime, physics.velocity));
 }
 
 void PhysicsSystem::ApplyPhysicsMultithreaded(const std::vector<Entity*>& entities) {

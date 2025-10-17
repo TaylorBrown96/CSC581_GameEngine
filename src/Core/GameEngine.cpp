@@ -134,7 +134,7 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
 
   // Render all visible entities
   for (const auto &entity : entities) {
-    if (entity->isVisible) {
+    if (entity->rendering.isVisible) {
       renderSystem->RenderEntity(entity);
     }
   }
