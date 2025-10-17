@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
   (void)doubleTimeline; // unused for now
   
   // Create entities
-  TestEntity *testEntity = new TestEntity(100, 100, halfTimeline, engine.GetRenderer());
+  TestEntity *testEntity = new TestEntity(100, 100, engine.GetRootTimeline(), engine.GetRenderer());
   // TestEntity already enables physics in its constructor
 
   Platform *platform1 = new Platform(300, 800, 300, 75, false, halfTimeline, engine.GetRenderer());

@@ -16,8 +16,8 @@ class TestEntity : public Entity {
     setComponent("lastFrameTime", static_cast<Uint32>(0));
     setComponent("animationDelay", 200);
     setComponent("grounded", false);
-    setComponent("groundRef", nullptr);
-    setComponent("groundVX", 0.0f);
+    setComponent("wasGrounded", false);
+    setComponent("groundRef", static_cast<Entity*>(nullptr));
     
     entityType = "TestEntity";
     SDL_Texture *entityTexture = LoadTexture(
@@ -38,8 +38,9 @@ class TestEntity : public Entity {
 
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
+    (void)entitySpawner;
+    
     // Update animation
-    (void) entitySpawner;
     Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
     int animationDelay = getComponent<int>("animationDelay");
     lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
@@ -49,22 +50,42 @@ class TestEntity : public Entity {
     }
     setComponent("lastFrameTime", lastFrameTime);
 
-    // Handle platform motion inheritance when no movement input is active
-    // This needs to be in Update because OnActivity is only called on button press
-    bool grounded = getComponent<bool>("grounded");
+    // speeds
+    constexpr float runSpeed = 200.0f;
+
+    // input
+    const bool left = input->IsKeyPressed(SDL_SCANCODE_A) ||
+                      input->IsKeyPressed(SDL_SCANCODE_LEFT);
+    const bool right = input->IsKeyPressed(SDL_SCANCODE_D) ||
+                       input->IsKeyPressed(SDL_SCANCODE_RIGHT);
+
+    // Get ground reference and grounded state
     Entity* groundRef = getComponent<Entity*>("groundRef");
-    const float carrierVX = (grounded && groundRef) 
-      ? groundRef->GetVelocityX() 
-      : 0.0f;
+    bool grounded = getComponent<bool>("grounded");
     
-    // Check if no movement input is currently active
-    const bool left = input->IsKeyPressed(SDL_SCANCODE_A) || input->IsKeyPressed(SDL_SCANCODE_LEFT);
-    const bool right = input->IsKeyPressed(SDL_SCANCODE_D) || input->IsKeyPressed(SDL_SCANCODE_RIGHT);
-    
-    // If no movement input is active, inherit platform motion
-    // if (!left && !right) {
-    //   velocity.x = carrierVX;  // inherit platform motion when idle
-    // }
+    // carrier velocity (only meaningful when grounded on a platform)
+    const float carrierVX =
+        (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
+
+    // base desired velocity from input (world-space)
+    float desiredVX = 0.0f;
+    if (left ^ right) { // exactly one is held
+      desiredVX = left ? -runSpeed : runSpeed;
+    }
+
+    // Set velocity directly based on input state
+    if (desiredVX != 0.0f) {
+      SetVelocityX(desiredVX); // ignore platform motion while moving
+    } else {
+      SetVelocityX(carrierVX); // inherit when idle
+    }
+
+    // Jump handling
+    if (input->IsKeyPressed(SDL_SCANCODE_SPACE) && grounded) {
+      SetVelocityY(-1500.0f);
+      setComponent("grounded", false);
+      setComponent("wasGrounded", false);
+    }
 
     // Bounce off screen edges (demonstrates entity system working) using window
     // bounds push opposite direction
@@ -75,19 +96,16 @@ class TestEntity : public Entity {
     }
 
     // Reset if falls off bottom (demonstrates physics working)
-    if (!grounded) {  // however you detect "no ground this frame"
-      setComponent("groundRef", nullptr);
-      setComponent("groundVX", 0.0f);
+    if (!grounded) { // however you detect "no ground this frame"
+      setComponent("groundRef", static_cast<Entity*>(nullptr));
     }
-    if (position.y > 1080) {  // fell off bottom of screen
+    if (position.y > 1080) { // fell off bottom of screen
       position.x = 100;
       position.y = 100;
       SetVelocityY(0.0f);
       setComponent("grounded", false);
-      setComponent("groundRef", nullptr);
-      setComponent("groundVX", 0.0f);
+      setComponent("groundRef", static_cast<Entity*>(nullptr));
     }
-    
 
     // Handle pause toggle (only on key press, not while held)
     static bool pKeyWasPressed = false;
@@ -102,39 +120,39 @@ class TestEntity : public Entity {
       }
     }
     pKeyWasPressed = pKeyIsPressed;
-  }
 
-  void OnActivity(const std::string& actionName) override {
-    // speeds
-    constexpr float runSpeed = 200.0f;
-    bool grounded = getComponent<bool>("grounded");
-    Entity* groundRef = getComponent<Entity*>("groundRef");
-    
-    if (actionName == "MOVE_LEFT") {
-      // Move left at constant speed, ignoring platform motion
-      SetVelocityX(-runSpeed);
-    } else if (actionName == "MOVE_RIGHT") {
-      // Move right at constant speed, ignoring platform motion
-      SetVelocityX(runSpeed);
-    } else if (actionName == "JUMP" && grounded) {
-      SetVelocityY(-1500.0f);
-      setComponent("grounded", false);
-    } else {
-      const float carrierVX = (grounded && groundRef) 
-        ? groundRef->GetVelocityX() 
-        : 0.0f;
-      SetVelocityX(carrierVX);
+    // Speed up and slow down the timeline for this entity
+    static bool iKeyWasPressed = false;
+    static bool oKeyWasPressed = false;
+    static bool uKeyWasPressed = false;
+    bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
+    bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
+    bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
+    if (iKeyIsPressed && !iKeyWasPressed) {
+      timeline->setScale(timeline->getScale() - 0.5f);
     }
+    if (oKeyIsPressed && !oKeyWasPressed) {
+      timeline->setScale(timeline->getScale() + 0.5f);
+    }
+    if (uKeyIsPressed && !uKeyWasPressed) {
+      timeline->setScale(0.5f);
+    }
+    iKeyWasPressed = iKeyIsPressed;
+    oKeyWasPressed = oKeyIsPressed;
+    uKeyWasPressed = uKeyIsPressed;
   }
 
-  void OnCollision(Entity *other, CollisionData *collData) override {    
-    setComponent("grounded", false);
+  void OnCollision(Entity *other, CollisionData *collData) override {
     if (collData->normal.y == -1.0f && collData->normal.x == 0.0f) {
+      bool wasGrounded = getComponent<bool>("wasGrounded");
+      if (!wasGrounded) {
+        setComponent("wasGrounded", true);
+      }
       setComponent("grounded", true);
       SetVelocityY(0.0f);
       setComponent("groundRef", other);
     } else if (collData->normal.x != 0.0f) {
-      SetVelocityX(0.0f);  // or keep desiredVX if you resolve penetration separately
+      SetVelocityX(0.0f);
     }
   }
 
