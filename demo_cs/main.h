@@ -146,7 +146,8 @@ class TestEntity : public Entity {
       setComponent("grounded", true);
       SetVelocityY(0.0f);
       setComponent("groundRef", other);
-    } else if (collData->normal.x != 0.0f) {
+    } else if (collData->normal.x != 0.0f && other->entityType != "ScrollBoundary") {
+      // Only stop horizontal movement for non-ScrollBoundary collisions
       SetVelocityX(0.0f);
     }
   }
@@ -209,17 +210,19 @@ class Platform : public Entity {
 
 class ScrollBoundary : public Entity {
  public:
-  ScrollBoundary(float x, float y, float w, float h, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr)
+  ScrollBoundary(float x, float y, float w, float h, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr, float maxOffsetX = 0.0f)
       : Entity(x, y, w, h, tl) {
     entityType = "ScrollBoundary";
-    EnableCollision(true, true);
+    EnableCollision(true, false);
     setComponent("enabledScroll", false);
     SetVisible(false);
+    setComponent("maxOffsetX", maxOffsetX);
   }
 
   void OnCollision(Entity *other, CollisionData *collData) override {
-    if(collData->normal.x != 0.0f && other->entityType == "TestEntity") {
+    if(collData->normal.x != 0.0f && other->entityType == "TestEntity" && other->GetOffSetX() >= getComponent<float>("maxOffsetX")) {
       std::cout<<"OnCollision: enabledScroll: "<<getComponent<bool>("enabledScroll")<<std::endl;
+      other->SetOffSetX(other->GetOffSetX() - 900.0f);
       setComponent("enabledScroll", true);
     }
   }
@@ -228,15 +231,6 @@ class ScrollBoundary : public Entity {
               EntityManager *entitySpawner) override {
     (void)input;
     (void)dt;
-    if(getComponent<bool>("enabledScroll")) {
-      std::cout<<"enabledScroll: "<<getComponent<bool>("enabledScroll")<<std::endl;
-      for (Entity* entity : entitySpawner->getEntityVectorRef()) {
-        std::cout<<"entity: "<<entity->entityType<<std::endl;
-        entity->SetOffSetX(entity->GetOffSetX() - 900.0f);
-      }
-      setComponent("enabledScroll", false);
-      collisionEnabled = false;
-    }
   }
 
 };

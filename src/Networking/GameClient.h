@@ -24,6 +24,9 @@ private:
     // Game state
     std::string lastReceivedGameState;
     std::map<std::string, std::function<Entity*()>> entityFactory;
+    
+    // Camera offset tracking
+    int playerEntityId;  // The entity ID that represents this client's player
 
 public:
     GameClient();
@@ -39,6 +42,10 @@ public:
     // Connection management
     bool IsConnected() const { return isConnected; }
     std::string GetClientId() const { return clientId; }
+    
+    // Camera management
+    void SetPlayerEntityId(int entityId) { playerEntityId = entityId; }
+    int GetPlayerEntityId() const { return playerEntityId; }
     
     // Override base class methods if needed
     bool Initialize(const char* title, int resx, int resy, float timeScale);
