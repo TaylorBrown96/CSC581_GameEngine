@@ -82,7 +82,7 @@ set(ENGINE_HEADERS
   src/Core/SharedData.h
   src/Core/JobSystem.h
   src/Math/vec2.h
-  src/main.h
+  demo_cs/main.h
 )
 
 # ---------------- Core library (no main.cpp) ----------------
@@ -93,20 +93,20 @@ add_library(EngineCore STATIC
   ${CORE_SOURCES}
   ${ENGINE_HEADERS}
 )
-target_include_directories(EngineCore PUBLIC src)
+target_include_directories(EngineCore PUBLIC src demo_cs)
 target_link_libraries(EngineCore PUBLIC SDL3::SDL3 libzmq cppzmq)
 
 # ---------------- Apps ----------------
 add_executable(GameEngine src/main.cpp)
-target_include_directories(GameEngine PRIVATE src)
+target_include_directories(GameEngine PRIVATE src demo_cs)
 target_link_libraries(GameEngine PRIVATE EngineCore)
 
-add_executable(GameServer src/server_main.cpp)
-target_include_directories(GameServer PRIVATE src)
+add_executable(GameServer demo_cs/server_main.cpp)
+target_include_directories(GameServer PRIVATE src demo_cs)
 target_link_libraries(GameServer PRIVATE EngineCore)
 
-add_executable(GameClient src/client_main.cpp)
-target_include_directories(GameClient PRIVATE src)
+add_executable(GameClient demo_cs/client_main.cpp)
+target_include_directories(GameClient PRIVATE src demo_cs)
 target_link_libraries(GameClient PRIVATE EngineCore)
 
 # ---------------- macOS rpath (optional) ----------------
