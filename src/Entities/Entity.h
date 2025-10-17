@@ -72,9 +72,9 @@ class Entity {
   vec2 position;
   vec2 dimensions;  
 
-  bool physicsEnabled;
+  bool physicsEnabled = false;
 
-  bool collisionEnabled;
+  bool collisionEnabled = false;
   
   Timeline *timeline = nullptr;
 
