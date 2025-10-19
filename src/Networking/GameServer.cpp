@@ -266,8 +266,14 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
     }
     
     // Process each action for the client
-    for (const auto& actionName : actions) {
-        GetPlayerEntity(clientId)->OnActivity(actionName);
+    if (actions.size() == 0) {
+        // for idle action
+        GetPlayerEntity(clientId)->OnActivity("");
+    }
+    else {
+        for (const auto& actionName : actions) {
+            GetPlayerEntity(clientId)->OnActivity(actionName);
+        }
     }
 }
 
