@@ -33,7 +33,7 @@ SDL_Texture *CreateColoredTexture(SDL_Renderer *renderer, uint32_t width, uint32
 
 class TestEntityBare : public Entity {
 public:
-  TestEntityBare(float x, float y, Timeline *tl, SDL_Renderer *renderer) : Entity(x, y, 128, 128, tl) {
+  TestEntityBare(float x, float y, Timeline *tl, SDL_Renderer *renderer, std::string pTypeId) : Entity(x, y, 128, 128, tl) {
     EnablePhysics(false);
     EnableCollision(true, false);
     SetVelocity(0.0f, 0.0f);
@@ -41,7 +41,7 @@ public:
     vec2 v = {.x = 0.0, .y = 0.0 };
     setComponent("V", v);
 
-    entityType = "TestEntityBare";
+    entityType = pTypeId;
     SDL_Texture *etex = CreateColoredTexture(renderer, 512, 512, 128, 0, 0);
     std::cout<<"\nNNNNtex ninit\n";
 
@@ -59,7 +59,7 @@ public:
     }
   }
 
-  
+
   void Update(float dt, InputManager* im, EntityManager* em) override {
 
     if (position.x < 0.0)

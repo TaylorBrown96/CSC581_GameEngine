@@ -221,94 +221,175 @@ void GameClient::Shutdown() {
     GameEngine::Shutdown();
 }
 
+bool byteSerialize;
+
 void GameClient::ProcessStringEntityData(const std::string& entityData) {
     if (entityData.empty()) {
         return;
     }
-        
-    // Split by newlines to get individual entity strings
-    std::vector<std::string> entityLines;
+
     std::stringstream ss(entityData);
     std::string line;
-    
-    while (std::getline(ss, line)) {
-        if (!line.empty()) {
-            entityLines.push_back(line);
-        }
-    }
-        
-    // Get the entity manager and sync entities
+
     auto entityMgr = GetEntityManager();
     if (!entityMgr) {
         return;
     }
-    
+
     std::vector<Entity*> localEntities = entityMgr->getEntityVectorRef();
     
     // Track which server entities we've seen
     std::set<int> serverEntityIds;
     
-    // For each entity from server, find or create corresponding local entity
-    for (const std::string& entityLine : entityLines) {
-        // Parse entity data: id,x,y,width,height,velocityX,velocityY,textureState,visible
-        std::vector<std::string> parts;
-        std::stringstream entityStream(entityLine);
-        std::string part;
+    if (byteSerialize) {
         
-        while (std::getline(entityStream, part, ',')) {
-            parts.push_back(part);
-        }
-        
-        if (parts.size() < 9) {
-            std::cerr << "Invalid entity data: " << entityLine << std::endl;
-            continue;
-        }
-        
-        // Parse values
-        int id = std::stoi(parts[0]);
-        std::string entityType = parts[1];
-        float x = std::stof(parts[2]);
-        float y = std::stof(parts[3]);
-        float width = std::stof(parts[4]);
-        float height = std::stof(parts[5]);
-        float velX = std::stof(parts[6]);
-        float velY = std::stof(parts[7]);
-        int textureState = std::stoi(parts[8]);
-        int currentFrame = std::stoi(parts[9]);
-        bool visible = (std::stoi(parts[10]) == 1);
-        
-        // Track this server entity
-        serverEntityIds.insert(id);
-        
-        // Find existing entity with this ID
-        Entity* localEntity = nullptr;
-        for (Entity* entity : localEntities) {
-            if (entity->GetId() == id) {
-                localEntity = entity;
-                break;
+        typedef struct EntData_t {
+            int id;
+            vec2 position;
+            vec2 dimensions;
+            vec2 velocity;
+            uint8_t current_tex_state;
+            uint8_t current_frame;
+            uint8_t visible;
+            char nl_or_eof = 0; // string end with 0
+        } EntData;
+
+       
+        while (std::getline(ss, line)) {
+            if (line.empty()) 
+                continue;
+                
+            int dlm = line.find(':');
+            std::string entityType = line.substr(0, dlm);
+            uint8_t* e_cstr = (uint8_t*)line.data();
+            
+            EntData* eData = (EntData*)&e_cstr[dlm + 1];
+
+            serverEntityIds.insert(eData->id);
+
+            Entity* localEntity = nullptr;
+            for (Entity* entity : localEntities) {
+                if (entity->GetId() == eData->id) {
+                    localEntity = entity;
+                    break;
+                }
             }
-        }
-        
-        if (localEntity) {
-            SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
-        } else {
-            // Try to find a registered entity factory for this type
-            auto it = this->entityFactory.find(entityType);
-            if (it != this->entityFactory.end()) {
-                localEntity = it->second();  // Call the factory function
-            } else {
-                localEntity = new Entity(x, y, width, height);
+
+            if (localEntity) {
+                SyncEntityWithStringData(localEntity, 
+                    eData->position.x,
+                    eData->position.y,
+                    eData->dimensions.x,
+                    eData->dimensions.y,
+                    eData->velocity.x,
+                    eData->velocity.y, 
+                    eData->current_tex_state,
+                    eData->current_frame, 
+                    eData->visible
+                );
             }
-            // CRITICAL: Override the auto-generated ID with server ID
-            localEntity->SetId(id);
-            localEntity->entityType = entityType;
-            entityMgr->AddEntity(localEntity);
-            // Sync with server data (this will override any factory defaults)
-            SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+            else { // Try to find a registered entity factory for this type
+                auto it = this->entityFactory.find(entityType);
+                if (it != this->entityFactory.end()) {
+                    localEntity = it->second();  // Call the factory function
+                } else {
+                    localEntity = new Entity(eData->position.x, 
+                        eData->position.y,
+                        eData->dimensions.x,
+                        eData->dimensions.y
+                    );
+                }
+                // CRITICAL: Override the auto-generated ID with server ID
+                localEntity->SetId(eData->id);
+                localEntity->entityType = entityType;
+                entityMgr->AddEntity(localEntity);
+                // Sync with server data (this will override any factory defaults)
+                SyncEntityWithStringData(localEntity, 
+                    eData->position.x,
+                    eData->position.y,
+                    eData->dimensions.x,
+                    eData->dimensions.y,
+                    eData->velocity.x,
+                    eData->velocity.y, 
+                    eData->current_tex_state,
+                    eData->current_frame, 
+                    eData->visible
+                );  
+            }
         }
     }
-    
-    // Remove any local entities that are no longer on the server
+    else {
+        
+        // Split by newlines to get individual entity strings
+        std::vector<std::string> entityLines;
+        
+        while (std::getline(ss, line)) {
+            if (!line.empty()) {
+                entityLines.push_back(line);
+            }
+        }
+                
+        // For each entity from server, find or create corresponding local entity
+        for (const std::string& entityLine : entityLines) {
+            // Parse entity data: id,x,y,width,height,velocityX,velocityY,textureState,visible
+            std::vector<std::string> parts;
+            std::stringstream entityStream(entityLine);
+            std::string part;
+            
+            while (std::getline(entityStream, part, ',')) {
+                parts.push_back(part);
+            }
+            
+            if (parts.size() < 9) {
+                std::cerr << "Invalid entity data: " << entityLine << std::endl;
+                continue;
+            }
+            
+            // Parse values
+            int id = std::stoi(parts[0]);
+            std::string entityType = parts[1];
+            float x = std::stof(parts[2]);
+            float y = std::stof(parts[3]);
+            float width = std::stof(parts[4]);
+            float height = std::stof(parts[5]);
+            float velX = std::stof(parts[6]);
+            float velY = std::stof(parts[7]);
+            int textureState = std::stoi(parts[8]);
+            int currentFrame = std::stoi(parts[9]);
+            bool visible = (std::stoi(parts[10]) == 1);
+            
+            // Track this server entity
+            serverEntityIds.insert(id);
+            
+            // Find existing entity with this ID
+            Entity* localEntity = nullptr;
+            for (Entity* entity : localEntities) {
+                if (entity->GetId() == id) {
+                    localEntity = entity;
+                    break;
+                }
+            }
+            
+            if (localEntity) {
+                SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+            } else {
+                // Try to find a registered entity factory for this type
+                auto it = this->entityFactory.find(entityType);
+                if (it != this->entityFactory.end()) {
+                    localEntity = it->second();  // Call the factory function
+                } else {
+                    localEntity = new Entity(x, y, width, height);
+                }
+                // CRITICAL: Override the auto-generated ID with server ID
+                localEntity->SetId(id);
+                localEntity->entityType = entityType;
+                entityMgr->AddEntity(localEntity);
+                // Sync with server data (this will override any factory defaults)
+                SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+            }
+        }        
+    }
+
     auto& entities = entityMgr->getEntityVectorRef();
     for (auto it = entities.begin(); it != entities.end();) {
         if (serverEntityIds.find((*it)->GetId()) == serverEntityIds.end()) {

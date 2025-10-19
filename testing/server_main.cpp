@@ -35,12 +35,14 @@ int main() {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;
     }
-    
+    server.byteSerialize = true;
     // Set up the player entity factory - developers can customize this
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
+    // server.RegisterTypeId("TestEntityBare");
+
     server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
-        return new TestEntityBare(100, 100, server.GetRootTimeline(), renderer);
+        return new TestEntityBare(100, 100, server.GetRootTimeline(), renderer, "TestEntityBare");
     });
 
     // Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());

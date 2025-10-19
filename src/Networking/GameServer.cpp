@@ -362,30 +362,70 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
     
     for (size_t i = 0; i < entities.size(); ++i) {
         Entity* entity = entities[i];
-        
-        // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
         float velX = 0.0f, velY = 0.0f;
         if (entity->physicsEnabled) {
             auto& physics = entity->getComponent<PhysicsComponent>("physics");
             velX = physics.velocity.x;
             velY = physics.velocity.y;
         }
+
+        if (byteSerialize) {
+
+            struct {
+                int id;
+                vec2 position;
+                vec2 dimensions;
+                vec2 velocity;
+                uint8_t current_tex_state;
+                uint8_t current_frame;
+                uint8_t visible;
+                char nl_or_eof = 0; // string end with 0
+            } entData;
+
+            
+            entData.id = entity->GetId();
+            entData.position = entity->position;
+            entData.dimensions = entity->dimensions;
+            entData.velocity = {.x = velX, .y = velY};
+            entData.current_tex_state = (uint8_t)entity->rendering.currentTextureState;
+            entData.current_frame = (uint8_t)entity->rendering.currentFrame;
+            entData.visible = (entity->rendering.isVisible ? 1 : 0);
+
+            if (i < entities.size() - 1) {
+                entData.nl_or_eof = '\n';
+            }
+            else
+                entData.nl_or_eof = 0;
         
-        ss << entity->GetId() << ","
-           << entity->entityType << ","
-           << entity->position.x << ","
-           << entity->position.y << ","
-           << entity->dimensions.x << ","
-           << entity->dimensions.y << ","
-           << velX << ","
-           << velY << ","
-           << entity->rendering.currentTextureState << ","
-           << entity->rendering.currentFrame << ","
-           << (entity->rendering.isVisible ? 1 : 0);
-        
-        // Add newline to separate entities
-        if (i < entities.size() - 1) {
-            ss << "\n";
+
+            char* strrep = (char*)&entData;
+            std::string sEntity(strrep, sizeof(entData));
+
+            ss << entity->entityType << ":" <<
+                sEntity;
+            
+        }
+        else {
+            // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
+            
+
+            
+            ss << entity->GetId() << ","
+            << entity->entityType << ","
+            << entity->position.x << ","
+            << entity->position.y << ","
+            << entity->dimensions.x << ","
+            << entity->dimensions.y << ","
+            << velX << ","
+            << velY << ","
+            << entity->rendering.currentTextureState << ","
+            << entity->rendering.currentFrame << ","
+            << (entity->rendering.isVisible ? 1 : 0);
+            
+            // Add newline to separate entities
+            if (i < entities.size() - 1) {
+                ss << "\n";
+            }
         }
     }
     
