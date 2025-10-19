@@ -5,7 +5,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include "main.h"
+#include "csmain.h"
 
 
 // Global server pointer for signal handling
@@ -40,16 +40,16 @@ int main() {
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
     server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
-        return new TestEntity(100, 100, server.GetRootTimeline(), renderer);
+        return new TestEntityBare(100, 100, server.GetRootTimeline(), renderer);
     });
 
-    Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
-    // platform1 has collision enabled but no physics (static platform)
-    server.GetEntityManager()->AddEntity(platform1);
+    // Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
+    // // platform1 has collision enabled but no physics (static platform)
+    // server.GetEntityManager()->AddEntity(platform1);
 
-    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
-    // platform2 has collision and physics enabled (moving platform)
-    server.GetEntityManager()->AddEntity(platform2);
+    // Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
+    // // platform2 has collision and physics enabled (moving platform)
+    // server.GetEntityManager()->AddEntity(platform2);
     
     // Start the server with publisher on port 5555 and pull socket on port 5556
     if (!server.StartServer(5555, 5556)) {
