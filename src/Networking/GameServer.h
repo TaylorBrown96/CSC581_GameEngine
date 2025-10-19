@@ -94,6 +94,8 @@ private:
     void MessageProcessorThread();
     void WorkerThreadFunction();
     void ProcessMessage(const std::string& message);
+    void ProcessClientActionsByte(const std::string& clientId, int* actionsData, int actionsSize);
+
     void ProcessClientActions(const std::string& clientId, const std::string& actionsData);
     std::string SerializeEntityVector(const std::vector<Entity*>& entities);
 };

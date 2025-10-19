@@ -222,9 +222,43 @@ void GameServer::WorkerThreadFunction() {
 void GameServer::ProcessMessage(const std::string& message) {
     // Parse and handle different message types
     if (message.find("CONNECT:") == 0) {
-        std::string clientId = message.substr(8); // Remove "CONNECT:" prefix
+        std::string clientId;
+
+        if (byteSerialize) {
+            std::stringstream ss(message);
+            std::string part;
+            std::vector<std::string> actionVector;
+            bool clientproc = false;
+            bool actionproc = false;
+
+            while (std::getline(ss, part, ':')) {
+                if (part == "CONNECT") {
+                    if (actionproc == true) actionproc = false;
+                    clientproc = true;
+                    continue;
+                }
+                else if (part == "ACT") {
+                    if (clientproc == true) clientproc = false;
+                    actionproc = true;
+                    continue;
+                }
+
+                if (clientproc) {
+                    clientId = part;
+                }
+                else if (actionproc) {
+                    actionVector.push_back(part);
+                }
+            }
+            InputManager* im = GetInput();
+            std::lock_guard<std::mutex> lk(im->actionsMutex);
+            im->SetAllActions(actionVector);
+        }
+        else {
+            clientId = message.substr(8); // Remove "CONNECT:" prefix
+        }
         AddClient(clientId);
-        SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
+        SpawnPlayerEntity(clientId);
     }
     else if (message.find("DISCONNECT:") == 0) {
         std::string clientId = message.substr(11); // Remove "DISCONNECT:" prefix
@@ -236,21 +270,50 @@ void GameServer::ProcessMessage(const std::string& message) {
         // Format: "ACTIONS:ClientId:MOVE_UP,MOVE_LEFT,JUMP"
         size_t firstColon = message.find(':');
         size_t secondColon = message.find(':', firstColon + 1);
+        std::string clientId;
         
-        if (firstColon != std::string::npos && secondColon != std::string::npos) {
-            std::string clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
-            std::string actionsData = message.substr(secondColon + 1);
-            
-            // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
-            
-            // Process actions and update game state
-            ProcessClientActions(clientId, actionsData);
+        if (byteSerialize) {
+            // FORMAT:
+            // ACTIONS:Clientid:(bytearraysize):(bytearray)
+            if (firstColon != std::string::npos && secondColon != std::string::npos) 
+                clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
+
+            int* bufptr = (int*)&(message.c_str()[secondColon + 1]);
+            int sz = bufptr[0];
+            ProcessClientActionsByte(clientId, &(bufptr[1]), sz);
+        }
+        else {
+            if (firstColon != std::string::npos && secondColon != std::string::npos) {
+                clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
+
+                std::string actionsData = message.substr(secondColon + 1);
+                
+                // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
+                
+                // Process actions and update game state
+                ProcessClientActions(clientId, actionsData);
+            }
         }
     }
     else {
         // Handle other message types
         std::cout << "Unknown message type: " << message << std::endl;
     }
+}
+
+void GameServer::ProcessClientActionsByte(const std::string& clientId, int* actionsData, int actionsSize) {
+    InputManager* im = GetInput();
+    std::vector<std::string> act = im->GetAllActions();
+
+    if (actionsSize == 0) {
+        GetPlayerEntity(clientId)->OnActivity("");
+    }
+    else {
+        for (int i = 0; i < actionsSize; i++) {
+            GetPlayerEntity(clientId)->OnActivity(act[actionsData[i]]);
+        }
+    }
+
 }
 
 void GameServer::ProcessClientActions(const std::string& clientId, const std::string& actionsData) {
@@ -407,8 +470,6 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
         }
         else {
             // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
-            
-
             
             ss << entity->GetId() << ","
             << entity->entityType << ","

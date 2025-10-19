@@ -60,9 +60,24 @@ bool GameClient::ConnectToServer(const std::string& address, int pubPort, int pu
     if (entityMgr) {
         entityMgr->ClearAllEntities();
     }
+    std::stringstream ss;
+    InputManager* inputManager = GetInput();
+    std::vector<std::string> allActions = inputManager->GetAllActions();
+
+    ss << "CONNECT:" << this->clientId ;
     
+    if (byteSerialize) {
+        ss << ":ACT:";
+
+        for (int n = 0; n < allActions.size(); n++) {
+            if (n == allActions.size() - 1)
+                ss << allActions[n];
+            else
+                ss << allActions[n] << ":";
+        }
+    }
     // Send initial connection message
-    SendMessageToServer("CONNECT:" + this->clientId);
+    SendMessageToServer(ss.str());
     
     std::cout << "GameClient " << this->clientId << " connected successfully to server" << std::endl;
     return true;
@@ -105,20 +120,34 @@ void GameClient::SendInputToServer() {
     if (!inputManager) {
         return;
     }
-    
-    // Get all currently active actions
-    std::vector<std::string> activeActions = inputManager->GetActiveActions();
-    
-    // Create action message
+
     std::stringstream actionMessage;
-    actionMessage << "ACTIONS:" << clientId << ":";
-    
-    // Add all active actions
-    for (size_t i = 0; i < activeActions.size(); ++i) {
-        if (i > 0) actionMessage << ",";
-        actionMessage << activeActions[i];
+
+    if (byteSerialize) {
+        std::vector<int> inds = inputManager->GetActiveActionIndices();
+        actionMessage << "ACTIONS:" << clientId << ":";
+        int tempBuffer[30];
+        tempBuffer[0] = inds.size();
+        for (int i = 0; i < inds.size(); i++) {
+            tempBuffer[i+1] = inds[i];
+        }
+        std::string actionsMsg((char*)tempBuffer, sizeof(int) * (inds.size() + 1));
+        actionMessage << actionsMsg;
     }
+    else {
     
+        // Get all currently active actions
+        std::vector<std::string> activeActions = inputManager->GetActiveActions();
+        
+        // Create action message
+        actionMessage << "ACTIONS:" << clientId << ":";
+        
+        // Add all active actions
+        for (size_t i = 0; i < activeActions.size(); ++i) {
+            if (i > 0) actionMessage << ",";
+            actionMessage << activeActions[i];
+        }
+    }
     SendMessageToServer(actionMessage.str());
 }
 
