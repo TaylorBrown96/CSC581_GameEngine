@@ -167,7 +167,14 @@ void GameClient::Run() {
     // We need to track running state ourselves since it's private in base class
     bool clientRunning = true;
 
+    int iters = 2000, it = 0;
+
+    auto t1 = std::chrono::high_resolution_clock::now();
     while (clientRunning) {
+        if (it < 2000)
+            it+=1;
+        else
+            clientRunning = false;
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (float)(currentTime - lastTime);
@@ -202,6 +209,10 @@ void GameClient::Run() {
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
         SDL_Delay(delay);
     }
+    auto t2 = std::chrono::high_resolution_clock::now() - t1;
+
+    double t = std::chrono::duration_cast<std::chrono::milliseconds>(t2).count() / (double)2000.0;
+    std::cout<<"Time per iteration: "<<t<<"\n";
 }
 
 void GameClient::Shutdown() {

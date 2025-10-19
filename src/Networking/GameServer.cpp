@@ -181,7 +181,7 @@ void GameServer::MessageProcessorThread() {
         
         if (result) {
             std::string messageStr(static_cast<char*>(message.data()), message.size());
-            std::cout << "Server received message: " << messageStr << std::endl;
+            // std::cout << "Server received message: " << messageStr << std::endl;
             
             // Add message to queue for worker threads to process
             {
@@ -241,7 +241,7 @@ void GameServer::ProcessMessage(const std::string& message) {
             std::string clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
             std::string actionsData = message.substr(secondColon + 1);
             
-            std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
+            // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
             
             // Process actions and update game state
             ProcessClientActions(clientId, actionsData);
@@ -298,7 +298,12 @@ void GameServer::Run() {
     SDL_Event event;
     Uint32 lastTime = SDL_GetTicks();
     
+    auto t1 = std::chrono::high_resolution_clock::now(), 
+        t2 = std::chrono::high_resolution_clock::now();
+    bool startedcount = false;
+    int it = 0;
     while (!shouldStop) {
+        it += startedcount * 1;
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (float)(currentTime - lastTime);
@@ -309,6 +314,10 @@ void GameServer::Run() {
         std::vector<Entity *> entities;
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
+            if (!startedcount && connectedClients.size() > 0) {
+                startedcount = true;
+                t1 = std::chrono::high_resolution_clock::now();
+            }
         }
         GetRootTimeline()->Update(deltaTime / 1000.0f);
         // Update the game engine (physics, collisions, etc.)
@@ -329,8 +338,16 @@ void GameServer::Run() {
 
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
         SDL_Delay(delay);
+
+        if (startedcount && connectedClients.size() == 0) {
+            t2 = std::chrono::high_resolution_clock::now();
+            startedcount = false;
+        }
+            
     }
-    
+    auto t = t2 - t1;
+    double T = (double)std::chrono::duration_cast<std::chrono::milliseconds>(t).count() / (double)it;
+    std::cout<<"Time: "<<T<<"\n";
     std::cout << "Server loop ended" << std::endl;
 }
 

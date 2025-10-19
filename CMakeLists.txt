@@ -101,11 +101,11 @@ add_executable(GameEngine src/main.cpp)
 target_include_directories(GameEngine PRIVATE src)
 target_link_libraries(GameEngine PRIVATE EngineCore)
 
-add_executable(GameServer src/server_main.cpp)
+add_executable(GameServer testing/server_main.cpp)
 target_include_directories(GameServer PRIVATE src)
 target_link_libraries(GameServer PRIVATE EngineCore)
 
-add_executable(GameClient src/client_main.cpp)
+add_executable(GameClient testing/client_main.cpp)
 target_include_directories(GameClient PRIVATE src)
 target_link_libraries(GameClient PRIVATE EngineCore)
 
