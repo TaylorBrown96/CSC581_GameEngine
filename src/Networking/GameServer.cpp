@@ -92,6 +92,10 @@ void GameServer::StopServer() {
     }
     
     std::cout << "GameServer stopped" << std::endl;
+
+    for (int i = 0; i < threadlogs.size(); i++) {
+        std::cout<<threadlogs[i]<<"\n";
+    }
 }
 
 void GameServer::HandleClientConnections() {
@@ -181,7 +185,7 @@ void GameServer::MessageProcessorThread() {
         
         if (result) {
             std::string messageStr(static_cast<char*>(message.data()), message.size());
-            std::cout << "Server received message: " << messageStr << std::endl;
+            // std::cout << "Server received message: " << messageStr << std::endl;
             
             // Add message to queue for worker threads to process
             {
@@ -195,6 +199,8 @@ void GameServer::MessageProcessorThread() {
 }
 
 void GameServer::WorkerThreadFunction() {
+    double time = 0.0;
+    int iters = 0;
     while (!shouldStopWorkers) {
         std::string message;
         
@@ -214,17 +220,63 @@ void GameServer::WorkerThreadFunction() {
         }
         
         if (!message.empty()) {
+            auto t1 = std::chrono::high_resolution_clock::now();
             ProcessMessage(message);
+            auto t2 = std::chrono::high_resolution_clock::now();
+            time += (double)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            iters++;
         }
     }
+    std::stringstream ss;
+    if (iters > 0) {
+        ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: "<<(time / (double)iters)<<" ms (processed "<<iters<<" messages)";
+    } else {
+        ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: N/A (no messages processed)";
+    }
+    std::lock_guard<std::mutex> lk(threadLogMutex);
+    threadlogs.push_back(ss.str());
 }
 
 void GameServer::ProcessMessage(const std::string& message) {
     // Parse and handle different message types
     if (message.find("CONNECT:") == 0) {
-        std::string clientId = message.substr(8); // Remove "CONNECT:" prefix
+        std::string clientId;
+
+        if (byteSerialize) {
+            std::stringstream ss(message);
+            std::string part;
+            std::vector<std::string> actionVector;
+            bool clientproc = false;
+            bool actionproc = false;
+
+            while (std::getline(ss, part, ':')) {
+                if (part == "CONNECT") {
+                    if (actionproc == true) actionproc = false;
+                    clientproc = true;
+                    continue;
+                }
+                else if (part == "ACT") {
+                    if (clientproc == true) clientproc = false;
+                    actionproc = true;
+                    continue;
+                }
+
+                if (clientproc) {
+                    clientId = part;
+                }
+                else if (actionproc) {
+                    actionVector.push_back(part);
+                }
+            }
+            InputManager* im = GetInput();
+            std::lock_guard<std::mutex> lk(im->actionsMutex);
+            im->SetAllActions(actionVector);
+        }
+        else {
+            clientId = message.substr(8); // Remove "CONNECT:" prefix
+        }
         AddClient(clientId);
-        SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
+        SpawnPlayerEntity(clientId);
     }
     else if (message.find("DISCONNECT:") == 0) {
         std::string clientId = message.substr(11); // Remove "DISCONNECT:" prefix
@@ -236,21 +288,50 @@ void GameServer::ProcessMessage(const std::string& message) {
         // Format: "ACTIONS:ClientId:MOVE_UP,MOVE_LEFT,JUMP"
         size_t firstColon = message.find(':');
         size_t secondColon = message.find(':', firstColon + 1);
+        std::string clientId;
         
-        if (firstColon != std::string::npos && secondColon != std::string::npos) {
-            std::string clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
-            std::string actionsData = message.substr(secondColon + 1);
-            
-            std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
-            
-            // Process actions and update game state
-            ProcessClientActions(clientId, actionsData);
+        if (byteSerialize) {
+            // FORMAT:
+            // ACTIONS:Clientid:(bytearraysize):(bytearray)
+            if (firstColon != std::string::npos && secondColon != std::string::npos) 
+                clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
+
+            int* bufptr = (int*)&(message.c_str()[secondColon + 1]);
+            int sz = bufptr[0];
+            ProcessClientActionsByte(clientId, &(bufptr[1]), sz);
+        }
+        else {
+            if (firstColon != std::string::npos && secondColon != std::string::npos) {
+                clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
+
+                std::string actionsData = message.substr(secondColon + 1);
+                
+                // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
+                
+                // Process actions and update game state
+                ProcessClientActions(clientId, actionsData);
+            }
         }
     }
     else {
         // Handle other message types
         std::cout << "Unknown message type: " << message << std::endl;
     }
+}
+
+void GameServer::ProcessClientActionsByte(const std::string& clientId, int* actionsData, int actionsSize) {
+    InputManager* im = GetInput();
+    std::vector<std::string> act = im->GetAllActions();
+
+    if (actionsSize == 0) {
+        GetPlayerEntity(clientId)->OnActivity("");
+    }
+    else {
+        for (int i = 0; i < actionsSize; i++) {
+            GetPlayerEntity(clientId)->OnActivity(act[actionsData[i]]);
+        }
+    }
+
 }
 
 void GameServer::ProcessClientActions(const std::string& clientId, const std::string& actionsData) {
@@ -298,7 +379,25 @@ void GameServer::Run() {
     SDL_Event event;
     Uint32 lastTime = SDL_GetTicks();
     
-    while (!shouldStop) {
+    auto t1 = std::chrono::high_resolution_clock::now(), 
+        t2 = std::chrono::high_resolution_clock::now();
+    bool startedcount = false;
+    int it = 0;
+
+    double tt = 0.0;
+    while (!shouldStop) {  
+        if (!startedcount && connectedClients.size() > 0) {
+            startedcount = true;
+        }
+
+        if (startedcount && connectedClients.size() == 0) {
+            startedcount = false;
+        }
+
+        
+        it += startedcount * 1;
+        t1 = std::chrono::high_resolution_clock::now();
+
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (float)(currentTime - lastTime);
@@ -328,9 +427,17 @@ void GameServer::Run() {
         }
 
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        SDL_Delay(delay);
+       
+        
+        t2 = std::chrono::high_resolution_clock::now();
+        double t = startedcount * (double)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        tt += t;
+
+        SDL_Delay(delay); 
     }
-    
+    // auto t = t2 - t1;
+    // double T = (double)std::chrono::duration_cast<std::chrono::milliseconds>(t).count() / (double)it;
+    std::cout<<"Time: "<<tt / (double)it<<"\n";
     std::cout << "Server loop ended" << std::endl;
 }
 
@@ -345,30 +452,68 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
     
     for (size_t i = 0; i < entities.size(); ++i) {
         Entity* entity = entities[i];
-        
-        // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
         float velX = 0.0f, velY = 0.0f;
         if (entity->physicsEnabled) {
             auto& physics = entity->getComponent<PhysicsComponent>("physics");
             velX = physics.velocity.x;
             velY = physics.velocity.y;
         }
+
+        if (byteSerialize) {
+
+            struct {
+                int id;
+                vec2 position;
+                vec2 dimensions;
+                vec2 velocity;
+                uint8_t current_tex_state;
+                uint8_t current_frame;
+                uint8_t visible;
+                char nl_or_eof = 0; // string end with 0
+            } entData;
+
+            
+            entData.id = entity->GetId();
+            entData.position = entity->position;
+            entData.dimensions = entity->dimensions;
+            entData.velocity = {.x = velX, .y = velY};
+            entData.current_tex_state = (uint8_t)entity->rendering.currentTextureState;
+            entData.current_frame = (uint8_t)entity->rendering.currentFrame;
+            entData.visible = (entity->rendering.isVisible ? 1 : 0);
+
+            if (i < entities.size() - 1) {
+                entData.nl_or_eof = '\n';
+            }
+            else
+                entData.nl_or_eof = 0;
         
-        ss << entity->GetId() << ","
-           << entity->entityType << ","
-           << entity->position.x << ","
-           << entity->position.y << ","
-           << entity->dimensions.x << ","
-           << entity->dimensions.y << ","
-           << velX << ","
-           << velY << ","
-           << entity->rendering.currentTextureState << ","
-           << entity->rendering.currentFrame << ","
-           << (entity->rendering.isVisible ? 1 : 0);
-        
-        // Add newline to separate entities
-        if (i < entities.size() - 1) {
-            ss << "\n";
+
+            char* strrep = (char*)&entData;
+            std::string sEntity(strrep, sizeof(entData));
+
+            ss << entity->entityType << ":" <<
+                sEntity;
+            
+        }
+        else {
+            // Format: id,x,y,width,height,velocityX,velocityY,textureState,visible
+            
+            ss << entity->GetId() << ","
+            << entity->entityType << ","
+            << entity->position.x << ","
+            << entity->position.y << ","
+            << entity->dimensions.x << ","
+            << entity->dimensions.y << ","
+            << velX << ","
+            << velY << ","
+            << entity->rendering.currentTextureState << ","
+            << entity->rendering.currentFrame << ","
+            << (entity->rendering.isVisible ? 1 : 0);
+            
+            // Add newline to separate entities
+            if (i < entities.size() - 1) {
+                ss << "\n";
+            }
         }
     }
     

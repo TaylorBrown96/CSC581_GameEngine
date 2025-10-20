@@ -2,9 +2,11 @@
 #include "Networking/GameClient.h"
 #include <iostream>
 #include <string>
-#include "main.h"
+#include "csmain.h"
+
 
 int main() {
+    std::cout<<"This is changed!!!!!!!\n";
     std::cout << "Starting GameClient..." << std::endl;
     
     GameClient client;
@@ -16,9 +18,16 @@ int main() {
         std::cerr << "Failed to initialize client" << std::endl;
         return 1;
     }
+    
+    client.byteSerialize = false;
 
-    client.RegisterEntity("TestEntity", [&client]() -> Entity* { return new TestEntity(100, 100, client.GetRootTimeline(), client.GetRenderer()); });
-    client.RegisterEntity("Platform", [&client]() -> Entity* { return new Platform(0, 0, 0, 0, false, client.GetRootTimeline(), client.GetRenderer()); });
+    client.RegisterEntity("TestEntityBare", [&client]() -> TestEntityBare* {
+        return new TestEntityBare(100, 100, client.GetRootTimeline(), client.GetRenderer(), "TestEntityBare"); 
+    });
+
+    client.RegisterEntity("DynamicEntityBare", [&client]() -> DynamicEntityBare* {
+        return new DynamicEntityBare(1, 1, client.GetRootTimeline(), client.GetRenderer(), "DynamicEntityBare"); 
+    });
     
     // Connect to the server (assuming server is running on localhost)
     std::string serverAddress = "localhost";
@@ -26,7 +35,9 @@ int main() {
     int pullPort = 5556;
     client.GetInput()->AddAction("MOVE_LEFT", SDL_SCANCODE_A);
     client.GetInput()->AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
-    client.GetInput()->AddAction("JUMP", SDL_SCANCODE_SPACE);
+    client.GetInput()->AddAction("MOVE_UP", SDL_SCANCODE_W);
+    client.GetInput()->AddAction("MOVE_DOWN", SDL_SCANCODE_S);
+    // client.GetInput()->AddAction("JUMP", SDL_SCANCODE_SPACE);
     std::cout << "Connecting to server at " << serverAddress << ":" << publisherPort << "/" << pullPort << std::endl;
     
     if (!client.ConnectToServer(serverAddress, publisherPort, pullPort)) {

@@ -5,7 +5,9 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
-#include "main.h"
+#include "csmain.h"
+#include <ctime>
+#include <SDL3/SDL_main.h>
 
 
 // Global server pointer for signal handling
@@ -21,7 +23,11 @@ void signalHandler(int signal) {
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    int nEntities = 8;
+    if (argc > 1)
+        nEntities = std::stoi(argv[1]);
+
     std::cout << "Starting GameServer..." << std::endl;
     
     // Register signal handler for Ctrl+C
@@ -35,21 +41,32 @@ int main() {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;
     }
-    
+    server.byteSerialize = false;
     // Set up the player entity factory - developers can customize this
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
+    // server.RegisterTypeId("TestEntityBare");
+
     server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
-        return new TestEntity(100, 100, server.GetRootTimeline(), renderer);
+        return new TestEntityBare(100, 100, server.GetRootTimeline(), renderer, "TestEntityBare");
     });
+    srand(time(0));
+    for (int n = 0; n < nEntities; n++) {
+        float f1 = std::rand() / (float)RAND_MAX;
+        float f2 = std::rand() / (float)RAND_MAX;
+        float x = 1.0 + (f1) * 800.0;
+        float y = 1.0 + (f2) * 800.0;
+        std::cout<<f1<<" "<<f2<<"\n";
+        DynamicEntityBare* dEntity = new DynamicEntityBare(x, y, server.GetRootTimeline(), server.GetRenderer(), "DynamicEntityBare");
+        server.GetEntityManager()->AddEntity(dEntity);
+    }
+    // Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
+    // // platform1 has collision enabled but no physics (static platform)
+    // server.GetEntityManager()->AddEntity(platform1);
 
-    Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
-    // platform1 has collision enabled but no physics (static platform)
-    server.GetEntityManager()->AddEntity(platform1);
-
-    Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
-    // platform2 has collision and physics enabled (moving platform)
-    server.GetEntityManager()->AddEntity(platform2);
+    // Platform *platform2 = new Platform(800, 650, 300, 75, true, server.GetRootTimeline(), server.GetRenderer());
+    // // platform2 has collision and physics enabled (moving platform)
+    // server.GetEntityManager()->AddEntity(platform2);
     
     // Start the server with publisher on port 5555 and pull socket on port 5556
     if (!server.StartServer(5555, 5556)) {

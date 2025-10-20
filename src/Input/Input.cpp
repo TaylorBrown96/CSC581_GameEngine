@@ -58,6 +58,7 @@ void InputManager::AddAction(const std::string& actionName, SDL_Scancode key) {
     
     // Add to key-to-action mapping
     keyToAction[key] = actionName;
+    allActions.push_back(actionName);
 }
 
 void InputManager::AddAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys) {
@@ -96,4 +97,25 @@ std::vector<std::string> InputManager::GetActiveActions() const {
     }
     
     return activeActions;
+}
+
+std::vector<int> InputManager::GetActiveActionIndices() {
+  std::vector<int> activeInds;
+  if (!keyboardState) return activeInds;
+  
+  for (int i = 0; i < allActions.size(); i++) {
+    if (IsActionActive(allActions[i]))
+      activeInds.push_back(i);
+  }
+
+  return activeInds;
+}
+
+std::vector<std::string> InputManager::GetAllActions() {
+  return allActions;
+}
+
+
+void InputManager::SetAllActions(std::vector<std::string> actions) {
+  allActions = actions;
 }

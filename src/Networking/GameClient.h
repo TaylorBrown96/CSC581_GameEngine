@@ -24,8 +24,10 @@ private:
     // Game state
     std::string lastReceivedGameState;
     std::map<std::string, std::function<Entity*()>> entityFactory;
+    std::map<int, std::string> typeIdToTypeString;
 
 public:
+    bool byteSerialize = false;
     GameClient();
     ~GameClient();
 
