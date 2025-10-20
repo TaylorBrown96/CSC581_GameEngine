@@ -10,7 +10,8 @@
 using namespace std;
 
 // GameClient Implementation
-GameClient::GameClient() : GameEngine(), isConnected(false), serverPublisherPort(0), serverPullPort(0) {
+GameClient::GameClient() : GameEngine(), isConnected(false), serverPublisherPort(0), serverPullPort(0), 
+                           playerEntityId(-1) {
     // Initialize ZeroMQ context
     zmqContext = std::make_unique<zmq::context_t>(1);
     subscriberSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_SUB);
@@ -113,10 +114,15 @@ void GameClient::SendInputToServer() {
     std::stringstream actionMessage;
     actionMessage << "ACTIONS:" << clientId << ":";
     
-    // Add all active actions
-    for (size_t i = 0; i < activeActions.size(); ++i) {
-        if (i > 0) actionMessage << ",";
-        actionMessage << activeActions[i];
+    // If no actions are active, send IDLE
+    if (activeActions.empty()) {
+        actionMessage << "IDLE";
+    } else {
+        // Add all active actions
+        for (size_t i = 0; i < activeActions.size(); ++i) {
+            if (i > 0) actionMessage << ",";
+            actionMessage << activeActions[i];
+        }
     }
     
     SendMessageToServer(actionMessage.str());
@@ -136,8 +142,28 @@ void GameClient::ProcessServerMessages() {
     
     if (result) {
         std::string messageStr(static_cast<char*>(message.data()), message.size());
-        // Process simple string entity data
-        ProcessStringEntityData(messageStr);
+        
+        // Check if this is a PLAYER_ENTITY message
+        if (messageStr.find("PLAYER_ENTITY:") == 0 && playerEntityId == -1) {
+            // Format: "PLAYER_ENTITY:ClientId:EntityId"
+            size_t firstColon = messageStr.find(':');
+            size_t secondColon = messageStr.find(':', firstColon + 1);
+            
+            if (firstColon != std::string::npos && secondColon != std::string::npos) {
+                std::string targetClientId = messageStr.substr(firstColon + 1, secondColon - firstColon - 1);
+                
+                // Only process if this message is for us
+                if (targetClientId == clientId) {
+                    std::string entityIdStr = messageStr.substr(secondColon + 1);
+                    int entityId = std::stoi(entityIdStr);
+                    SetPlayerEntityId(entityId);
+                    std::cout << "Client " << clientId << " assigned player entity ID: " << entityId << std::endl;
+                }
+            }
+        } else {
+            // Process normal entity data
+            ProcessStringEntityData(messageStr);
+        }
     }
     
 }
@@ -211,6 +237,8 @@ void GameClient::Shutdown() {
 }
 
 void GameClient::ProcessStringEntityData(const std::string& entityData) {
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
     if (entityData.empty()) {
         return;
     }
@@ -248,7 +276,7 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
             parts.push_back(part);
         }
         
-        if (parts.size() < 9) {
+        if (parts.size() < 11) {
             std::cerr << "Invalid entity data: " << entityLine << std::endl;
             continue;
         }
@@ -258,13 +286,17 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
         std::string entityType = parts[1];
         float x = std::stof(parts[2]);
         float y = std::stof(parts[3]);
-        float width = std::stof(parts[4]);
-        float height = std::stof(parts[5]);
-        float velX = std::stof(parts[6]);
-        float velY = std::stof(parts[7]);
-        int textureState = std::stoi(parts[8]);
-        int currentFrame = std::stoi(parts[9]);
-        bool visible = (std::stoi(parts[10]) == 1);
+        if(id == playerEntityId && playerEntityId != -1) {
+            offsetX = std::stof(parts[4]);
+            offsetY = std::stof(parts[5]);
+        }
+        float width = std::stof(parts[6]);
+        float height = std::stof(parts[7]);
+        float velX = std::stof(parts[8]);
+        float velY = std::stof(parts[9]);
+        int textureState = std::stoi(parts[10]);
+        int currentFrame = std::stoi(parts[11]);
+        bool visible = (std::stoi(parts[12]) == 1);
         
         // Track this server entity
         serverEntityIds.insert(id);
@@ -279,7 +311,7 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
         }
         
         if (localEntity) {
-            SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+            SyncEntityWithStringData(localEntity, x, y, offsetX, offsetY, width, height, velX, velY, textureState, currentFrame, visible);
         } else {
             // Try to find a registered entity factory for this type
             auto it = this->entityFactory.find(entityType);
@@ -293,13 +325,20 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
             localEntity->entityType = entityType;
             entityMgr->AddEntity(localEntity);
             // Sync with server data (this will override any factory defaults)
-            SyncEntityWithStringData(localEntity, x, y, width, height, velX, velY, textureState, currentFrame, visible);
+            SyncEntityWithStringData(localEntity, x, y, offsetX, offsetY, width, height, velX, velY, textureState, currentFrame, visible);
         }
     }
     
     // Remove any local entities that are no longer on the server
     auto& entities = entityMgr->getEntityVectorRef();
     for (auto it = entities.begin(); it != entities.end();) {
+        if(playerEntityId != -1) {
+            (*it)->rendering.offSetX = offsetX;
+            (*it)->rendering.offSetY = offsetY;
+        } else {
+            (*it)->rendering.offSetX = 0.0f;
+            (*it)->rendering.offSetY = 0.0f;
+        }
         if (serverEntityIds.find((*it)->GetId()) == serverEntityIds.end()) {
             delete *it;
             it = entities.erase(it);
@@ -309,10 +348,12 @@ void GameClient::ProcessStringEntityData(const std::string& entityData) {
     }
 }
 
-void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, float width, float height, 
+void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, float offSetX, float offSetY, float width, float height, 
                                          float velX, float velY, int textureState, int currentFrame, bool visible) {
     // Update entity properties from string data
     entity->SetPosition(x, y);
+    entity->rendering.offSetX = offSetX;
+    entity->rendering.offSetY = offSetY;
     entity->dimensions = {.x = width, .y = height};
     // Update physics component if it exists
     if (entity->physicsEnabled && entity->hasComponent("physics")) {

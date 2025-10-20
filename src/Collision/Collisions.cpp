@@ -18,6 +18,10 @@ bool CollisionSystem::CheckCollision(const SDL_FRect &a,
 void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
 
   const size_t n = entities.size();
+
+  if (n == 0)
+    return;
+    
   for (size_t i = 0; i < n - 1; ++i) {
     for (size_t j = i + 1; j < n; ++j) {
       Entity *A = entities[i];

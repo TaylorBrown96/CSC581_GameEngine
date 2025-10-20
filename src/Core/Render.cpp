@@ -76,6 +76,10 @@ SDL_FRect RenderSystem::CalculateRenderRect(const Entity *entity) {
   vec2 pos = entity->position;
   vec2 dims = entity->dimensions;
 
+  // apply camera offset
+  pos.x += entity->rendering.offSetX;
+  pos.y += entity->rendering.offSetY;
+
   if (currentMode == ScalingMode::PROPORTIONAL) {
     const float scaleX = screenWidth / baseWidth;
     const float scaleY = screenHeight / baseHeight;

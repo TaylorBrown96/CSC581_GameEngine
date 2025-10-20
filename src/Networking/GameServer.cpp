@@ -151,7 +151,12 @@ Entity* GameServer::SpawnPlayerEntity(const std::string& clientId) {
         std::lock_guard<std::mutex> lock(entityMapMutex);
         clientToEntityMap[clientId] = playerEntity;
         GetEntityManager()->AddEntity(playerEntity);
-        std::cout << "Spawned player entity for client: " << clientId << std::endl;
+        std::cout << "Spawned player entity for client: " << clientId << " with entity ID: " << playerEntity->GetId() << std::endl;
+        
+        // Send player entity ID back to the client via the message system
+        // We'll send this as a unicast message (but since we're using PUB/SUB, it will broadcast)
+        std::string entityIdMessage = "PLAYER_ENTITY:" + clientId + ":" + std::to_string(playerEntity->GetId());
+        BroadcastGameState(entityIdMessage);
     }
     return playerEntity;
 }
@@ -181,7 +186,7 @@ void GameServer::MessageProcessorThread() {
         
         if (result) {
             std::string messageStr(static_cast<char*>(message.data()), message.size());
-            std::cout << "Server received message: " << messageStr << std::endl;
+            // std::cout << "Server received message: " << messageStr << std::endl;
             
             // Add message to queue for worker threads to process
             {
@@ -241,7 +246,7 @@ void GameServer::ProcessMessage(const std::string& message) {
             std::string clientId = message.substr(firstColon + 1, secondColon - firstColon - 1);
             std::string actionsData = message.substr(secondColon + 1);
             
-            std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
+            // std::cout << "Received actions from " << clientId << ": " << actionsData << std::endl;
             
             // Process actions and update game state
             ProcessClientActions(clientId, actionsData);
@@ -249,7 +254,7 @@ void GameServer::ProcessMessage(const std::string& message) {
     }
     else {
         // Handle other message types
-        std::cout << "Unknown message type: " << message << std::endl;
+        // std::cout << "Unknown message type: " << message << std::endl;
     }
 }
 
@@ -265,9 +270,21 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
         }
     }
     
+    Entity* playerEntity = GetPlayerEntity(clientId);
+    if (!playerEntity) {
+        // Player entity doesn't exist yet or was already removed
+        return;
+    }
+    
     // Process each action for the client
-    for (const auto& actionName : actions) {
-        GetPlayerEntity(clientId)->OnActivity(actionName);
+    if (actions.size() == 0) {
+        // for idle action
+        playerEntity->OnActivity("");
+    }
+    else {
+        for (const auto& actionName : actions) {
+            playerEntity->OnActivity(actionName);
+        }
     }
 }
 
@@ -352,6 +369,8 @@ std::string GameServer::SerializeEntityVector(const std::vector<Entity*>& entiti
            << entity->entityType << ","
            << entity->position.x << ","
            << entity->position.y << ","
+           << entity->rendering.offSetX << ","
+           << entity->rendering.offSetY << ","
            << entity->dimensions.x << ","
            << entity->dimensions.y << ","
            << velX << ","
