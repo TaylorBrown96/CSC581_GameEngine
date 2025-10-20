@@ -1,4 +1,3 @@
-# Usage: CLIENT="./path/to/GameClient" ./launch_server.sh
+#!/bin/bash
 
-
-${CLIENT} > log.client
+${BUILDPATH}/GameClient > log.client

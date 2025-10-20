@@ -1,13 +1,14 @@
 #!/bin/bash
-# Experiment 1: Many clients joining a bare server.
+# Experiment 1: Many clients joining a bare server. (./launch_bare_server + ./stresstest_client)
+# Experiment 2: Many clients joining a server with 100 entities 
+# Usage: ./stresstest_client
 
-# Usage: CLIENT=./path/to/GameClient ./tresstest_client
-${CLIENT} > log.client1 &
-${CLIENT} > log.client2 &
-${CLIENT} > log.client3 &
-${CLIENT} > log.client4 &
-${CLIENT} > log.client5 &
-${CLIENT} > log.client6 &
-${CLIENT} > log.client7 &
-${CLIENT} > log.client8 &
-${CLIENT} > log.client9 &
+${BUILDPATH}/GameClient > log.client1 &
+${BUILDPATH}/GameClient > log.client2 &
+${BUILDPATH}/GameClient > log.client3 &
+${BUILDPATH}/GameClient > log.client4 &
+${BUILDPATH}/GameClient > log.client5 &
+${BUILDPATH}/GameClient > log.client6 &
+${BUILDPATH}/GameClient > log.client7 &
+${BUILDPATH}/GameClient > log.client8 &
+${BUILDPATH}/GameClient > log.client9 &
