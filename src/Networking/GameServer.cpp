@@ -270,9 +270,21 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
         }
     }
     
+    Entity* playerEntity = GetPlayerEntity(clientId);
+    if (!playerEntity) {
+        // Player entity doesn't exist yet or was already removed
+        return;
+    }
+    
     // Process each action for the client
-    for (const auto& actionName : actions) {
-        GetPlayerEntity(clientId)->OnActivity(actionName);
+    if (actions.size() == 0) {
+        // for idle action
+        playerEntity->OnActivity("");
+    }
+    else {
+        for (const auto& actionName : actions) {
+            playerEntity->OnActivity(actionName);
+        }
     }
 }
 
