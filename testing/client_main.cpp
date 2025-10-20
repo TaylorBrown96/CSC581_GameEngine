@@ -18,10 +18,15 @@ int main() {
         std::cerr << "Failed to initialize client" << std::endl;
         return 1;
     }
+    
     client.byteSerialize = false;
 
     client.RegisterEntity("TestEntityBare", [&client]() -> TestEntityBare* {
         return new TestEntityBare(100, 100, client.GetRootTimeline(), client.GetRenderer(), "TestEntityBare"); 
+    });
+
+    client.RegisterEntity("DynamicEntityBare", [&client]() -> DynamicEntityBare* {
+        return new DynamicEntityBare(1, 1, client.GetRootTimeline(), client.GetRenderer(), "DynamicEntityBare"); 
     });
     
     // Connect to the server (assuming server is running on localhost)

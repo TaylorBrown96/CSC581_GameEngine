@@ -6,6 +6,8 @@
 #include <thread>
 #include <chrono>
 #include "csmain.h"
+#include <ctime>
+#include <SDL3/SDL_main.h>
 
 
 // Global server pointer for signal handling
@@ -21,7 +23,11 @@ void signalHandler(int signal) {
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    int nEntities = 8;
+    if (argc > 1)
+        nEntities = std::stoi(argv[1]);
+
     std::cout << "Starting GameServer..." << std::endl;
     
     // Register signal handler for Ctrl+C
@@ -44,7 +50,16 @@ int main() {
     server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
         return new TestEntityBare(100, 100, server.GetRootTimeline(), renderer, "TestEntityBare");
     });
-
+    srand(time(0));
+    for (int n = 0; n < nEntities; n++) {
+        float f1 = std::rand() / (float)RAND_MAX;
+        float f2 = std::rand() / (float)RAND_MAX;
+        float x = 1.0 + (f1) * 800.0;
+        float y = 1.0 + (f2) * 800.0;
+        std::cout<<f1<<" "<<f2<<"\n";
+        DynamicEntityBare* dEntity = new DynamicEntityBare(x, y, server.GetRootTimeline(), server.GetRenderer(), "DynamicEntityBare");
+        server.GetEntityManager()->AddEntity(dEntity);
+    }
     // Platform *platform1 = new Platform(300, 800, 300, 75, false, server.GetRootTimeline(), server.GetRenderer());
     // // platform1 has collision enabled but no physics (static platform)
     // server.GetEntityManager()->AddEntity(platform1);

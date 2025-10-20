@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
-
+#include <random>
+#include <ctime>
 #include "Core/GameEngine.h"
 // #include <memory>
 
@@ -91,6 +92,63 @@ public:
     }
     getComponent<PhysicsComponent>("physics").velocity = getComponent<vec2>("V");
   }
+  
+  bool GetSourceRect(SDL_FRect &out) const override {
+    out = SampleTextureAt(0, 0);
+    return true;
+  }
+};
+
+class DynamicEntityBare : public Entity {
+public:
+  DynamicEntityBare(float x, float y, Timeline *tl, SDL_Renderer *renderer, std::string pTypeId) : Entity(x, y, 128, 128, tl) {
+    EnablePhysics(false);
+    EnableCollision(true, false);
+    SetVelocity(0.0f, 0.0f);
+    SetCurrentFrame(0);
+
+    float vx = (std::rand() / (float)RAND_MAX - 1.0) * 2.0,
+      vy = (std::rand() / (float)RAND_MAX - 1.0) * 2.0;
+    SetVelocity(vx * 200.0, vy * 200.0);
+      
+    entityType = pTypeId;
+    SDL_Texture *etex = CreateColoredTexture(renderer, 512, 512, 0, 128, 0);
+
+    if (etex) {
+      Texture tex = {
+        .sheet = etex,
+        .num_frames_x = 1,
+        .num_frames_y = 0,
+        .frame_width = 512,
+        .frame_height = 512,
+        .loop = true
+      };
+      SetTexture(0, &tex);
+    }
+  }
+
+
+  void Update(float dt, InputManager* im, EntityManager* em) override {
+    float vx = GetVelocityX();
+    float vy = GetVelocityY();
+
+    if (position.x <= 0.0 || position.x >= 1000.0) {
+      if (position.x <= 0.0) position.x = 1.0;
+      if (position.x >= 1000.0) position.x = 999.0;
+
+      vx *= -1.0;
+    }
+      
+    if (position.y <= 0.0 || position.y >= 1000.0) {
+      if (position.y <= 0.0) position.y = 1.0;
+      if (position.y >= 1000.0) position.y = 999.0;
+
+      vy *= -1.0;
+    }
+
+    SetVelocity(vx, vy);  
+  }
+
   
   bool GetSourceRect(SDL_FRect &out) const override {
     out = SampleTextureAt(0, 0);

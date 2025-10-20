@@ -198,12 +198,15 @@ void GameClient::Run() {
 
     int iters = 2000, it = 0;
 
-    auto t1 = std::chrono::high_resolution_clock::now();
+    double t_ms;
+
     while (clientRunning) {
         if (it < 2000)
             it+=1;
         else
             clientRunning = false;
+        auto t1 = std::chrono::high_resolution_clock::now();
+
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (float)(currentTime - lastTime);
@@ -235,13 +238,15 @@ void GameClient::Run() {
             lastInputSend = currentTime;
         }
         Render(entities);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double t = (double)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        t_ms += t;
+
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
         SDL_Delay(delay);
     }
-    auto t2 = std::chrono::high_resolution_clock::now() - t1;
 
-    double t = std::chrono::duration_cast<std::chrono::milliseconds>(t2).count() / (double)2000.0;
-    std::cout<<"Time per iteration: "<<t<<"\n";
+    std::cout<<"Time per iteration: "<<t_ms / 2000.0<<"\n";
 }
 
 void GameClient::Shutdown() {

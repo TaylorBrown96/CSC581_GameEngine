@@ -31,9 +31,6 @@ private:
     
     // Client-to-entity mapping
     std::unordered_map<std::string, Entity*> clientToEntityMap;
-    std::map<std::string, int> typeStringToTypeId;
-
-    int typeIds = 128;
 
     std::mutex entityMapMutex;
     
@@ -53,7 +50,8 @@ private:
     
     // Thread control
     bool shouldStop;
-
+    std::mutex threadLogMutex;
+    std::vector<std::string> threadlogs;
     
 
 public:
@@ -67,10 +65,7 @@ public:
     void HandleClientConnections();
     void BroadcastGameState(const std::string& gameState);
     void ProcessClientMessages();
-    void RegisterTypeId(std::string entityType) {
-        typeStringToTypeId[entityType] = typeIds;
-        typeIds++;
-    }
+    
     // Connection management
     void AddClient(const std::string& clientId);
     void RemoveClient(const std::string& clientId);

@@ -92,6 +92,10 @@ void GameServer::StopServer() {
     }
     
     std::cout << "GameServer stopped" << std::endl;
+
+    for (int i = 0; i < threadlogs.size(); i++) {
+        std::cout<<threadlogs[i]<<"\n";
+    }
 }
 
 void GameServer::HandleClientConnections() {
@@ -195,6 +199,8 @@ void GameServer::MessageProcessorThread() {
 }
 
 void GameServer::WorkerThreadFunction() {
+    double time = 0.0;
+    int iters = 0.0;
     while (!shouldStopWorkers) {
         std::string message;
         
@@ -214,9 +220,17 @@ void GameServer::WorkerThreadFunction() {
         }
         
         if (!message.empty()) {
+            auto t1 = std::chrono::high_resolution_clock::now();
             ProcessMessage(message);
+            auto t2 = std::chrono::high_resolution_clock::now();
+            time += (double)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            iters++;
         }
     }
+    std::stringstream ss;
+    ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: "<<time / (double)iters;
+    std::lock_guard<std::mutex> lk(threadLogMutex);
+    threadlogs.push_back(ss.str());
 }
 
 void GameServer::ProcessMessage(const std::string& message) {
@@ -365,8 +379,21 @@ void GameServer::Run() {
         t2 = std::chrono::high_resolution_clock::now();
     bool startedcount = false;
     int it = 0;
-    while (!shouldStop) {
+
+    double tt = 0.0;
+    while (!shouldStop) {  
+        if (!startedcount && connectedClients.size() > 0) {
+            startedcount = true;
+        }
+
+        if (startedcount && connectedClients.size() == 0) {
+            startedcount = false;
+        }
+
+        
         it += startedcount * 1;
+        t1 = std::chrono::high_resolution_clock::now();
+
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
         float deltaTime = (float)(currentTime - lastTime);
@@ -377,10 +404,7 @@ void GameServer::Run() {
         std::vector<Entity *> entities;
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
-            if (!startedcount && connectedClients.size() > 0) {
-                startedcount = true;
-                t1 = std::chrono::high_resolution_clock::now();
-            }
+            
         }
         GetRootTimeline()->Update(deltaTime / 1000.0f);
         // Update the game engine (physics, collisions, etc.)
@@ -400,17 +424,17 @@ void GameServer::Run() {
         }
 
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        SDL_Delay(delay);
+       
+        
+        t2 = std::chrono::high_resolution_clock::now();
+        double t = startedcount * (double)std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        tt += t;
 
-        if (startedcount && connectedClients.size() == 0) {
-            t2 = std::chrono::high_resolution_clock::now();
-            startedcount = false;
-        }
-            
+        SDL_Delay(delay); 
     }
-    auto t = t2 - t1;
-    double T = (double)std::chrono::duration_cast<std::chrono::milliseconds>(t).count() / (double)it;
-    std::cout<<"Time: "<<T<<"\n";
+    // auto t = t2 - t1;
+    // double T = (double)std::chrono::duration_cast<std::chrono::milliseconds>(t).count() / (double)it;
+    std::cout<<"Time: "<<tt / (double)it<<"\n";
     std::cout << "Server loop ended" << std::endl;
 }
 
