@@ -43,10 +43,8 @@ public:
 
     entityType = pTypeId;
     SDL_Texture *etex = CreateColoredTexture(renderer, 512, 512, 128, 0, 0);
-    std::cout<<"\nNNNNtex ninit\n";
 
     if (etex) {
-      std::cout<<"tex init\n";
       Texture tex = {
         .sheet = etex,
         .num_frames_x = 1,

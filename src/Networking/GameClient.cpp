@@ -250,7 +250,6 @@ void GameClient::Shutdown() {
     GameEngine::Shutdown();
 }
 
-bool byteSerialize;
 
 void GameClient::ProcessStringEntityData(const std::string& entityData) {
     if (entityData.empty()) {

@@ -18,10 +18,9 @@ int main() {
         std::cerr << "Failed to initialize client" << std::endl;
         return 1;
     }
-    client.byteSerialize = true;
+    client.byteSerialize = false;
 
     client.RegisterEntity("TestEntityBare", [&client]() -> TestEntityBare* {
-        std::cout<<"factory Spawn";
         return new TestEntityBare(100, 100, client.GetRootTimeline(), client.GetRenderer(), "TestEntityBare"); 
     });
     

@@ -35,7 +35,7 @@ int main() {
         std::cerr << "Failed to initialize server" << std::endl;
         return 1;
     }
-    server.byteSerialize = true;
+    server.byteSerialize = false;
     // Set up the player entity factory - developers can customize this
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
