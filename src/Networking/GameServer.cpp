@@ -200,7 +200,7 @@ void GameServer::MessageProcessorThread() {
 
 void GameServer::WorkerThreadFunction() {
     double time = 0.0;
-    int iters = 0.0;
+    int iters = 0;
     while (!shouldStopWorkers) {
         std::string message;
         
@@ -228,7 +228,11 @@ void GameServer::WorkerThreadFunction() {
         }
     }
     std::stringstream ss;
-    ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: "<<time / (double)iters;
+    if (iters > 0) {
+        ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: "<<(time / (double)iters)<<" ms (processed "<<iters<<" messages)";
+    } else {
+        ss<<"[Worker Thread \t"<<std::this_thread::get_id()<<"] Message Processing Time: N/A (no messages processed)";
+    }
     std::lock_guard<std::mutex> lk(threadLogMutex);
     threadlogs.push_back(ss.str());
 }
@@ -404,7 +408,6 @@ void GameServer::Run() {
         std::vector<Entity *> entities;
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
-            
         }
         GetRootTimeline()->Update(deltaTime / 1000.0f);
         // Update the game engine (physics, collisions, etc.)
