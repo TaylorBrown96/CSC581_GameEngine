@@ -55,6 +55,7 @@ set(REQUIRED_SOURCES
   src/Networking/GameClient.cpp
   src/Input/Input.cpp
   src/Core/Render.cpp
+  src/Events/EventSystem.cpp
   src/Physics/Physics.cpp
   src/Collision/Collisions.cpp
   src/Math/vec2.cpp
@@ -75,6 +76,7 @@ set(ENGINE_HEADERS
   src/Networking/GameClient.h
   src/Input/Input.h
   src/Core/Render.h
+  src/Events/EventSystem.h
   src/Physics/Physics.h
   src/Collision/Collisions.h
   src/Entities/Entity.h
