@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
-
+#include <mutex>
 class Timeline {
 public:
     enum class State { RUN, PAUSE };
 
+    std::mutex timelineMutex;
 
     Timeline(float s = 1.0f, Timeline* p = nullptr) {
         this->scale = s;
@@ -88,6 +89,11 @@ public:
 
     void addChild(Timeline *child) {
         children.push_back(child);
+    }
+
+    float getElapsedTime() {
+        std::lock_guard<std::mutex> lk(timelineMutex);
+        return elapsedTime;
     }
 
 
