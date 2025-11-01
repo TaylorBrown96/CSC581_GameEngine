@@ -6,7 +6,7 @@
 #include <map>
 #include <queue>
 
-// TODO make this into variants? bit too unsafe imo, but variants will have less flexibility
+// TODO make this into variants? bit too unsafe right now imo, but variants will have less flexibility
 
 typedef struct Event {
     int type;
