@@ -6,6 +6,8 @@
 #include <map>
 #include <queue>
 
+// TODO make this into variants? bit too unsafe imo, but variants will have less flexibility
+
 typedef struct Event {
     int type;
     float timestamp;
@@ -45,6 +47,9 @@ public:
 
 
 class EventManager {
+
+    // event priority comparator
+
     class EventPriority {
         public: bool operator()(Event A, Event B) {
             if (A.timestamp > B.timestamp) {
@@ -70,7 +75,7 @@ public:
         events.push(E);
     }
 
-    void HandleEvents() {
+    void HandleCurrentEvents() {
         float currentTimestamp = timeline->getElapsedTime();
 
         std::vector<Event> futureEvents;

@@ -65,7 +65,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
   rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
-
+  eventManager = std::make_unique<EventManager>(rootTimeline.get());
   running = true;
   return true;
 }
@@ -80,13 +80,16 @@ void GameEngine::Run() {
     float deltaTime = (float)(currentTime - lastTime);
     lastTime = currentTime;
 
-    // Handle events
+    // Handle events {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT ||
           input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
       }
     }
+    eventManager->HandleCurrentEvents();
+    // } end handle events
+
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
     // Update engine systems in parallel

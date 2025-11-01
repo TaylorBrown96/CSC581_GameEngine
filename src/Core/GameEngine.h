@@ -11,6 +11,8 @@
 #include "Physics/Physics.h"
 #include "Render.h"
 #include "Timeline/Timeline.h"
+#include "Events/EventSystem.h"
+
 #include <vector>
 
 
@@ -34,6 +36,7 @@ class GameEngine {
   std::unique_ptr<RenderSystem> renderSystem;
   std::unique_ptr<Timeline> rootTimeline;
   std::unique_ptr<EntityManager> entityManager;
+  std::unique_ptr<EventManager> eventManager;
   JobSystem jobSystem;
 
 
