@@ -90,6 +90,10 @@ public:
         children.push_back(child);
     }
 
+    float getElapsedTime() {
+        return elapsedTime;
+    }
+
 
 private:
     float scale;

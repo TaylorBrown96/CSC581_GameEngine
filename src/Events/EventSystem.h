@@ -8,6 +8,9 @@
 
 typedef struct Event {
     int type;
+    float timestamp;
+    void* data;
+    size_t size;
 } Event;
 
 // overloaded in main
@@ -20,6 +23,8 @@ public:
     // user override
     virtual void OnEvent(Event E) = 0;
     
+    // similar api as Entity, just rewritten because inheriting from wntity would be too costly
+
     bool hasComponent(const std::string& key) const {
         std::lock_guard<std::mutex> lock(componentMutex);
         return components.find(key) != components.end();
@@ -40,10 +45,20 @@ public:
 
 
 class EventManager {
-    std::map<int, std::vector<EventHandler*>> EventHandlers;
-    std::vector<Event> events;
-    Timeline* timeline;
+    class EventPriority {
+        public: bool operator()(Event A, Event B) {
+            if (A.timestamp > B.timestamp) {
+                return true;
+            }
+            else return false;
+        }
+    };
 
+    std::map<int, std::vector<EventHandler*>> EventHandlers;
+    // std::vector<Event> events;
+    std::priority_queue<Event, std::vector<Event>, EventManager::EventPriority> events;
+    Timeline* timeline; // global timeline or per-handler?
+    
 public:
     EventManager(Timeline* tl) : timeline(tl) {}
    
@@ -52,16 +67,37 @@ public:
     }
 
     void Raise(Event E) {
-        events.push_back(E);
+        events.push(E);
     }
 
     void HandleEvents() {
-        for (int i = 0; i < events.size(); i++) {
-            Event currentEvent = events[i];
-            for (int j = 0; j < EventHandlers[currentEvent.type].size(); j++) {
-                EventHandlers[currentEvent.type][j]->OnEvent(currentEvent);
+        float currentTimestamp = timeline->getElapsedTime();
+
+        std::vector<Event> futureEvents;
+        while (!events.empty()) {
+
+            Event e = events.top();
+
+            // if this is a future event
+            if (e.timestamp > currentTimestamp) {
+                // remove event from prio queue and preserve it in futureEvents
+                futureEvents.push_back(e);
+                
             }
+            else {
+                // handle the event
+                std::vector<EventHandler*> evHandlers = EventHandlers[e.type];
+                for (int i = 0; i < evHandlers.size(); i++) {
+                    evHandlers[i]->OnEvent(e);
+                }   
+            }    
+
+            events.pop();
         }
-        events.clear();
+
+        // push future events back into prio queue
+        for (int i = 0; i < futureEvents.size(); i++) {
+            events.push(futureEvents[i]);
+        }
     }
 };
