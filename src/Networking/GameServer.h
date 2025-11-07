@@ -57,9 +57,7 @@ public:
     // Server-specific methods
     bool StartServer(int pubPort, int pullPort);
     void StopServer();
-    void HandleClientConnections();
     void BroadcastGameState(const std::string& gameState);
-    void ProcessClientMessages();
     
     // Connection management
     void AddClient(const std::string& clientId);
