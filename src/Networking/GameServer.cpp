@@ -223,7 +223,10 @@ void GameServer::ProcessMessage(const std::string& message) {
     if (message.find("CONNECT:") == 0) {
         std::string clientId = message.substr(8); // Remove "CONNECT:" prefix
         AddClient(clientId);
-        SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
+        eventManager->Raise(new SpawnEvent(this, clientId));
+    
+        // eventManager->Raise(SpawnEvent())
+        // SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
     }
     else if (message.find("DISCONNECT:") == 0) {
         std::string clientId = message.substr(11); // Remove "DISCONNECT:" prefix
@@ -290,6 +293,7 @@ bool GameServer::Initialize(const char* title, int resx, int resy) {
     }
     // Necessary event registrations 
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_INPUT, new InputEventHandler());
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_SPAWN, new SpawnEventHandler());
     // Server-specific initialization
     std::cout << "GameServer initialized with headless game engine" << std::endl;
     

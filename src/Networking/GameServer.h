@@ -10,6 +10,9 @@
 #include <functional>
 #include <queue>
 
+#include <Events/EventSystem.h>
+#include <Events/EventTypes.h>
+
 // GameServer class that inherits from GameEngine
 class GameServer : public GameEngine {
 private:
@@ -84,4 +87,32 @@ private:
     void ProcessMessage(const std::string& message);
     void ProcessClientActions(const std::string& clientId, const std::string& actionsData);
     std::string SerializeEntityVector(const std::vector<Entity*>& entities);
+};
+
+
+struct SpawnEvent : public Event {
+private:
+    GameServer* srv;
+public:
+    std::string clientId;
+    SpawnEvent(GameServer* psrv, std::string pclientId)
+    : srv(psrv), clientId(pclientId) {
+    }
+    GameServer* getGameServer() {
+        return srv;
+    }
+};
+ 
+
+
+class SpawnEventHandler : public EventHandler {
+    public:
+    void OnEvent(Event* E) override {
+        if (E->type == EventType::EVENT_TYPE_SPAWN) { 
+            SpawnEvent* spawnEvent = static_cast<SpawnEvent*>(E);
+            SDL_Log("In here\n");
+
+            spawnEvent->getGameServer()->SpawnPlayerEntity(spawnEvent->clientId);
+        }
+    }
 };
