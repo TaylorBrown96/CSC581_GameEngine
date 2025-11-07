@@ -280,7 +280,6 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
     }
     else {
         for (const auto& actionName : actions) {
-            SDL_Log("ProcessClientActions: actionName: %s", actionName.c_str());
             eventManager->Raise(new InputEvent(actionName, playerEntity));
         }
     }
