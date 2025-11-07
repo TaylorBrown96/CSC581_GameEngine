@@ -97,6 +97,7 @@ public:
     std::string clientId;
     SpawnEvent(GameServer* psrv, std::string pclientId)
     : srv(psrv), clientId(pclientId) {
+        type = EventType::EVENT_TYPE_SPAWN;
     }
     GameServer* getGameServer() {
         return srv;
