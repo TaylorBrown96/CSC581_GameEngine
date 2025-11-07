@@ -108,9 +108,9 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
 
 
       // TODO
-      // eventManager->Raise(CollisionEvent(dyn, stat, cd_dyn, cd_stat))
-      dyn->OnCollision(stat, &cd_dyn);
-      stat->OnCollision(dyn, &cd_stat);
+      eventManager->Raise(new CollisionEvent(dyn, stat, cd_dyn, cd_stat));
+      // dyn->OnCollision(stat, &cd_dyn);
+      // stat->OnCollision(dyn, &cd_stat);
     }
   }
 }
