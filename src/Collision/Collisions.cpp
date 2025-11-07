@@ -106,6 +106,9 @@ void CollisionSystem::ProcessCollisions(std::vector<Entity *> &entities) {
       CollisionData cd_stat = {.point = collision_point,
                                .normal = sb_collision_normal};
 
+
+      // TODO
+      // eventManager->Raise(CollisionEvent(dyn, stat, cd_dyn, cd_stat))
       dyn->OnCollision(stat, &cd_dyn);
       stat->OnCollision(dyn, &cd_stat);
     }
