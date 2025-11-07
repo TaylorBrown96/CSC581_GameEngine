@@ -161,7 +161,7 @@ void GameServer::DespawnPlayerEntity(const std::string& clientId) {
     if (it != clientToEntityMap.end()) {
         Entity* playerEntity = it->second;
         GetEntityManager()->RemoveEntity(playerEntity);
-        delete playerEntity; // Clean up the entity
+        // delete playerEntity; // Clean up the entity
         clientToEntityMap.erase(it);
         std::cout << "Despawned player entity for client: " << clientId << std::endl;
     }

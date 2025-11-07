@@ -8,7 +8,7 @@ void EntityManager::RemoveEntity(Entity *entity) {
 
   entities.erase(std::remove(entities.begin(), entities.end(), entity),
                  entities.end());
-  delete entity;
+  // delete entity;
 }
 
 void EntityManager::ClearAllEntities() {
