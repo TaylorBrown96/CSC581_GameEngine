@@ -127,7 +127,7 @@ std::vector<std::string> GameServer::GetConnectedClients() {
     return connectedClients;
 }
 
-void GameServer::SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory) {
+void GameServer::SetPlayerSpawnEvent(std::function<Entity*(SDL_Renderer*)> factory) {
     playerEntityFactory = factory;
 }
 

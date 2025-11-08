@@ -68,7 +68,7 @@ public:
     std::vector<std::string> GetConnectedClients();
     
     // Player entity management
-    void SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory);
+    void SetPlayerSpawnEvent(std::function<Entity*(SDL_Renderer*)> factory);
     Entity* SpawnPlayerEntity(const std::string& clientId);
     void DespawnPlayerEntity(const std::string& clientId);
     Entity* GetPlayerEntity(const std::string& clientId);
