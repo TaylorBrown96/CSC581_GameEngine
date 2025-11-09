@@ -34,7 +34,7 @@ class CollisionSystem {
   public:
   bool CheckCollision(const Entity *a, const Entity *b) const;
   bool CheckCollision(const SDL_FRect &a, const SDL_FRect &b) const;
-  void setEventmanager(EventManager* ev) {eventManager = ev;}
+  void SetEventManager(EventManager* ev) {eventManager = ev;}
   // Resolves penetration and sets grounded when landing on static bodies.
   void ProcessCollisions(std::vector<Entity *> &entities);
 };

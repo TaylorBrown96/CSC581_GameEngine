@@ -241,7 +241,7 @@ void GameClient::Run() {
 void GameClient::Shutdown() {
     DisconnectFromServer();
     // Call base class shutdown
-    eventManager->Raise(ReplayEvent::Start());
+    eventManager->Raise(ReplayEvent::Stop());
 
     GameEngine::Shutdown();
 }

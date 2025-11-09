@@ -295,7 +295,7 @@ bool GameServer::Initialize(const char* title, int resx, int resy) {
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_INPUT, new InputEventHandler());
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_SPAWN, new SpawnEventHandler());
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
-    GetCollision()->setEventmanager(eventManager.get());
+    // GetCollision()->SetEventManager(eventManager.get());
     // Server-specific initialization
     std::cout << "GameServer initialized with headless game engine" << std::endl;
     
@@ -346,6 +346,7 @@ void GameServer::Run() {
 }
 
 void GameServer::Shutdown() {
+
     StopServer();
     // Call base class shutdown
     GameEngine::Shutdown();
