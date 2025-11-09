@@ -11,6 +11,7 @@
 #include "Physics/Physics.h"
 #include "Render.h"
 #include "Timeline/Timeline.h"
+#include "Replay/ReplaySystem.h"
 #include <vector>
 
 
@@ -60,7 +61,9 @@ class GameEngine {
   SDL_Renderer *GetRenderer() const { return renderer; }
 
   Timeline *GetRootTimeline() const { return rootTimeline.get(); }
+  ReplaySystem* GetReplaySystem() const { return replaySystem.get(); }
 
 private:
   void HandleEvents();
+  std::unique_ptr<ReplaySystem> replaySystem;
 };

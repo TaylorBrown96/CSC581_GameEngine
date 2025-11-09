@@ -7,20 +7,30 @@
 using namespace std;
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), headlessMode(false), jobSystem(2) {}
-GameEngine::GameEngine(bool headless) : window(nullptr), renderer(nullptr), running(false), headlessMode(headless), jobSystem(2) {}
+GameEngine::GameEngine()
+    : window(nullptr),
+      renderer(nullptr),
+      running(false),
+      headlessMode(false),
+      jobSystem(2) {}
 
+GameEngine::GameEngine(bool headless)
+    : window(nullptr),
+      renderer(nullptr),
+      running(false),
+      headlessMode(headless),
+      jobSystem(2) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale = 1.0f) {
+bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale /*= 1.0f*/) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
     return false;
   }
 
-  if(timeScale < 0.5 || timeScale > 2.0) {
+  if (timeScale < 0.5f || timeScale > 2.0f) {
     SDL_Log("Time scale must be between 0.5 and 2.0");
     return false;
   }
@@ -28,6 +38,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   tickRate = 60.0f * timeScale;
   winsizeX = resx;
   winsizeY = resy;
+
   if (!headlessMode) {
     // Create window normally
     window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
@@ -59,12 +70,16 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   }
 
   // Initialize systems
-  physics = std::make_unique<PhysicsSystem>(3);
-  input = std::make_unique<InputManager>();
-  collision = std::make_unique<CollisionSystem>();
-  renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
-  rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
+  physics       = std::make_unique<PhysicsSystem>(3);
+  input         = std::make_unique<InputManager>();
+  collision     = std::make_unique<CollisionSystem>();
+  renderSystem  = std::make_unique<RenderSystem>(renderer, resx, resy);
+  rootTimeline  = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
+
+  // Replay system initialization: keep the last 5 seconds of history
+  replaySystem = std::make_unique<ReplaySystem>(5.0f);
+  replaySystem->StartRecording();
 
   running = true;
   return true;
@@ -75,10 +90,11 @@ void GameEngine::Run() {
   Uint32 lastTime = SDL_GetTicks();
 
   while (running) {
-    // Calculate delta time
+    // Calculate delta time in milliseconds
     Uint32 currentTime = SDL_GetTicks();
-    float deltaTime = (float)(currentTime - lastTime);
-    lastTime = currentTime;
+    float deltaTimeMs   = static_cast<float>(currentTime - lastTime);
+    lastTime            = currentTime;
+    float deltaTimeSec  = deltaTimeMs / 1000.0f;
 
     // Handle events
     while (SDL_PollEvent(&event)) {
@@ -86,32 +102,61 @@ void GameEngine::Run() {
           input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
       }
+
+      // Replay toggle: press R to switch between recording and playback
+      if (event.type == SDL_EVENT_KEY_DOWN &&
+          event.key.scancode == SDL_SCANCODE_R) {
+        if (replaySystem) {
+          auto mode = replaySystem->GetMode();
+          if (mode == ReplaySystem::Mode::Recording) {
+            replaySystem->StopRecording();
+            replaySystem->StartPlayback();
+          } else if (mode == ReplaySystem::Mode::Playing) {
+            replaySystem->StopPlayback();
+            replaySystem->StartRecording();
+          } else { // Idle -> start recording
+            replaySystem->StartRecording();
+          }
+        }
+      }
     }
+
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
-    // Update engine systems in parallel
-    UpdateSystemsParallel(deltaTime / 1000.0);
-    // update game
-    Update(deltaTime / 1000.0, entities);
+    // Update engine systems in parallel (input, timeline, etc.)
+    UpdateSystemsParallel(deltaTimeSec);
+
+    // Update game simulation + replay
+    Update(deltaTimeSec, entities);
 
     // Render
     Render(entities);
 
-    float delay = std::max(0.0, 1000.0 / tickRate - deltaTime);
-    SDL_Delay(delay);
+    float delay = std::max(0.0f, 1000.0f / tickRate - deltaTimeMs);
+    SDL_Delay(static_cast<Uint32>(delay));
   }
 }
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
-  // Update all entities
+  // If we are in playback mode, only advance the replay and skip live simulation.
+  if (replaySystem && replaySystem->GetMode() == ReplaySystem::Mode::Playing) {
+    replaySystem->Update(deltaTime);
+    return;
+  }
+
+  // Normal simulation path (recording or idle)
   for (auto &entity : entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
     entity->Update(entityDeltaTime, input.get(), entityManager.get());
-
   }
+
   physics->ApplyPhysicsMultithreaded(entities);
-  // Process collisions
   collision->ProcessCollisions(entities);
+
+  // Let the replay system capture this frame at the end of the update.
+  if (replaySystem) {
+    replaySystem->Update(deltaTime);
+  }
 }
 
 void GameEngine::Render(std::vector<Entity *> &entities) {
@@ -125,15 +170,22 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
   if (renderSystem->GetScalingMode() == ScalingMode::PROPORTIONAL) {
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
-    renderSystem->screenHeight = (float)h;
-    renderSystem->screenWidth = (float)w;
+    renderSystem->screenHeight = static_cast<float>(h);
+    renderSystem->screenWidth  = static_cast<float>(w);
   }
-  // Clear screen to blue as required
-  renderSystem->SetBackgroundColor(0, 100, 200);  // Blue background
+
+   // Background: blue normally, forest green during replay playback
+  if (replaySystem && replaySystem->GetMode() == ReplaySystem::Mode::Playing) {
+    // Forest green
+    renderSystem->SetBackgroundColor(34, 139, 34);
+  } else {
+    // Normal blue
+    renderSystem->SetBackgroundColor(0, 100, 200);
+  }
   renderSystem->Clear();
 
   // Render all visible entities
-  for (const auto &entity : entities) {
+  for (const auto& entity : entities) {
     if (entity->rendering.isVisible) {
       renderSystem->RenderEntity(entity);
     }
@@ -145,22 +197,24 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
 void GameEngine::UpdateSystemsParallel(float deltaTime) {
   // Clear the job queue for new frame
   jobSystem.ClearJobs();
-  
+
   // Add parallel system updates
   jobSystem.AddJob([this]() {
     input->Update();
   });
-  
+
   jobSystem.AddJob([this, deltaTime]() {
     rootTimeline->Update(deltaTime);
   });
-  
+
   // Execute all engine system updates in parallel
   jobSystem.ExecuteJobs();
 }
 
 void GameEngine::Shutdown() {
-  entityManager->ClearAllEntities();
+  if (entityManager) {
+    entityManager->ClearAllEntities();
+  }
 
   if (renderer) {
     SDL_DestroyRenderer(renderer);

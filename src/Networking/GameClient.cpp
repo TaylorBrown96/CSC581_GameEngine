@@ -140,32 +140,47 @@ void GameClient::ProcessServerMessages() {
     zmq::message_t message;
     auto result = subscriberSocket->recv(message, zmq::recv_flags::dontwait);
     
-    if (result) {
-        std::string messageStr(static_cast<char*>(message.data()), message.size());
-        
-        // Check if this is a PLAYER_ENTITY message
-        if (messageStr.find("PLAYER_ENTITY:") == 0 && playerEntityId == -1) {
-            // Format: "PLAYER_ENTITY:ClientId:EntityId"
-            size_t firstColon = messageStr.find(':');
-            size_t secondColon = messageStr.find(':', firstColon + 1);
-            
-            if (firstColon != std::string::npos && secondColon != std::string::npos) {
-                std::string targetClientId = messageStr.substr(firstColon + 1, secondColon - firstColon - 1);
-                
-                // Only process if this message is for us
-                if (targetClientId == clientId) {
-                    std::string entityIdStr = messageStr.substr(secondColon + 1);
-                    int entityId = std::stoi(entityIdStr);
-                    SetPlayerEntityId(entityId);
-                    std::cout << "Client " << clientId << " assigned player entity ID: " << entityId << std::endl;
-                }
-            }
-        } else {
-            // Process normal entity data
-            ProcessStringEntityData(messageStr);
-        }
+    if (!result) {
+        return;
     }
-    
+
+    std::string messageStr(static_cast<char*>(message.data()), message.size());
+
+    // 1) Global replay command from server
+    if (messageStr == "REPLAY_START") {
+        auto* replay = GetReplaySystem();
+        if (replay && replay->GetMode() == ReplaySystem::Mode::Recording) {
+            replay->StopRecording();
+            replay->StartPlayback();
+            std::cout << "Received REPLAY_START from server -> starting local replay"
+                      << std::endl;
+        }
+        return; // nothing else to process for this message
+    }
+        
+    // 2) PLAYER_ENTITY assignment message
+    if (messageStr.find("PLAYER_ENTITY:") == 0 && playerEntityId == -1) {
+        // Format: "PLAYER_ENTITY:ClientId:EntityId"
+        size_t firstColon  = messageStr.find(':');
+        size_t secondColon = messageStr.find(':', firstColon + 1);
+        
+        if (firstColon != std::string::npos && secondColon != std::string::npos) {
+            std::string targetClientId =
+                messageStr.substr(firstColon + 1, secondColon - firstColon - 1);
+            
+            // Only process if this message is for us
+            if (targetClientId == clientId) {
+                std::string entityIdStr = messageStr.substr(secondColon + 1);
+                int entityId = std::stoi(entityIdStr);
+                SetPlayerEntityId(entityId);
+                std::cout << "Client " << clientId
+                          << " assigned player entity ID: " << entityId << std::endl;
+            }
+        }
+    } else {
+        // 3) Everything else = normal game state update
+        ProcessStringEntityData(messageStr);
+    }
 }
 
 bool GameClient::Initialize(const char* title, int resx, int resy, float timeScale) {
@@ -183,23 +198,24 @@ bool GameClient::Initialize(const char* title, int resx, int resy, float timeSca
 void GameClient::Run() {
     // Override base class run to include network input sending
     SDL_Event event;
-    Uint32 lastTime = SDL_GetTicks();
+    Uint32 lastTime      = SDL_GetTicks();
     Uint32 lastInputSend = SDL_GetTicks();
     
     // Get access to base class members through public methods
     auto inputManager = GetInput();
-    auto entityMgr = GetEntityManager();
+    auto entityMgr    = GetEntityManager();
 
     // We need to track running state ourselves since it's private in base class
     bool clientRunning = true;
 
     while (clientRunning) {
-        // Calculate delta time
+        // Calculate delta time (ms -> seconds)
         Uint32 currentTime = SDL_GetTicks();
-        float deltaTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
+        float  deltaMs     = static_cast<float>(currentTime - lastTime);
+        lastTime           = currentTime;
+        float  deltaSec    = deltaMs / 1000.0f;
 
-        // Handle events
+        // Handle events (ESC or window close)
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT ||
                 (inputManager && inputManager->IsKeyPressed(SDL_SCANCODE_ESCAPE))) {
@@ -209,6 +225,7 @@ void GameClient::Run() {
         
         // Process server messages (non-blocking)
         ProcessServerMessages();
+
         std::vector<Entity *> entities;
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
@@ -218,15 +235,24 @@ void GameClient::Run() {
         if (inputManager) {
             inputManager->Update();
         }
+
+        // Tick replay system on the client (for dummy track + mode changes)
+        if (auto* replay = GetReplaySystem()) {
+            replay->Update(deltaSec);
+        }
         
         // Send input to server periodically (every 50ms)
         if (isConnected && (currentTime - lastInputSend) > 50) {
             SendInputToServer();
             lastInputSend = currentTime;
         }
+
+        // Render current state (driven by server snapshots)
         Render(entities);
-        float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        SDL_Delay(delay);
+
+        // Cap to ~60 FPS using the millisecond delta
+        float delay = std::max(0.0f, 1000.0f / 60.0f - deltaMs);
+        SDL_Delay(static_cast<Uint32>(delay));
     }
 }
 

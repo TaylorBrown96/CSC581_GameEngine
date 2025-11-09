@@ -59,6 +59,7 @@ set(REQUIRED_SOURCES
   src/Collision/Collisions.cpp
   src/Math/vec2.cpp
   src/Core/JobSystem.cpp
+  src/Replay/ReplaySystem.cpp
 )
 
 set(ENGINE_SOURCES ${REQUIRED_SOURCES})
@@ -82,6 +83,7 @@ set(ENGINE_HEADERS
   src/Core/SharedData.h
   src/Core/JobSystem.h
   src/Math/vec2.h
+  src/Replay/ReplaySystem.h
   demo_cs/main.h
 )
 

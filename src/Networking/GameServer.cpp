@@ -258,30 +258,69 @@ void GameServer::ProcessMessage(const std::string& message) {
     }
 }
 
-void GameServer::ProcessClientActions(const std::string& clientId, const std::string& actionsData) {
+void GameServer::ProcessClientActions(const std::string& clientId,
+                                      const std::string& actionsData) {
     // Parse comma-separated actions
     std::vector<std::string> actions;
     std::stringstream ss(actionsData);
     std::string action;
-    
+
     while (std::getline(ss, action, ',')) {
         if (!action.empty()) {
             actions.push_back(action);
         }
     }
-    
-    Entity* playerEntity = GetPlayerEntity(clientId);
+
+    // Look up or spawn the player entity for this client
+    Entity* playerEntity = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(entityMapMutex);
+        auto it = clientToEntityMap.find(clientId);
+        if (it != clientToEntityMap.end()) {
+            playerEntity = it->second;
+        }
+    }
+
     if (!playerEntity) {
-        // Player entity doesn't exist yet or was already removed
-        return;
+        playerEntity = SpawnPlayerEntity(clientId);
     }
-    
-    // Process each action for the client
-    if (actions.size() == 0) {
-        // for idle action
+    if (!playerEntity) {
+        return; // nothing more we can do
+    }
+
+    // Handle REPLAY as a special, global action
+    bool requestedReplay = false;
+    std::vector<std::string> filtered;
+    filtered.reserve(actions.size());
+
+    for (const auto& a : actions) {
+        if (a == "REPLAY") {
+            requestedReplay = true;
+        } else {
+            filtered.push_back(a);
+        }
+    }
+    actions.swap(filtered);
+
+    if (requestedReplay) {
+        auto* replay = GetReplaySystem();
+        if (replay && replay->GetMode() == ReplaySystem::Mode::Recording) {
+            // Switch server into playback mode
+            replay->StopRecording();
+            replay->StartPlayback();
+
+            // Tell all clients to start their own replay playback
+            BroadcastGameState("REPLAY_START");
+            std::cout << "Replay requested by client " << clientId
+                      << " -> starting replay on all clients" << std::endl;
+        }
+    }
+
+    // Process remaining actions for the client
+    if (actions.empty()) {
+        // Idle
         playerEntity->OnActivity("");
-    }
-    else {
+    } else {
         for (const auto& actionName : actions) {
             playerEntity->OnActivity(actionName);
         }
@@ -306,14 +345,14 @@ void GameServer::Run() {
     
     // Run the game engine loop with networking
     auto lastBroadcast = std::chrono::steady_clock::now();
-    SDL_Event event;
-    Uint32 lastTime = SDL_GetTicks();
+    Uint32 lastTime    = SDL_GetTicks();
     
     while (!shouldStop) {
-        // Calculate delta time
+        // Calculate delta time (ms -> seconds)
         Uint32 currentTime = SDL_GetTicks();
-        float deltaTime = (float)(currentTime - lastTime);
-        lastTime = currentTime;
+        float  deltaMs     = static_cast<float>(currentTime - lastTime);
+        lastTime           = currentTime;
+        float  deltaSec    = deltaMs / 1000.0f;
         
         // Get entities from the game engine
         auto entityMgr = GetEntityManager();
@@ -321,16 +360,23 @@ void GameServer::Run() {
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
         }
-        GetRootTimeline()->Update(deltaTime / 1000.0f);
-        // Update the game engine (physics, collisions, etc.)
-        Update(deltaTime, entities);
+
+        // Update the root timeline and simulation in seconds
+        GetRootTimeline()->Update(deltaSec);
+        Update(deltaSec, entities);
+
+        // Tick replay system on the server (records or plays back world snapshots)
+        if (auto* replay = GetReplaySystem()) {
+            replay->Update(deltaSec);
+        }
         
         // Process client messages (handled by worker threads)
         HandleClientConnections();
         
         // Check if 10ms have passed since last broadcast
         auto now = std::chrono::steady_clock::now();
-        auto timeSinceLastBroadcast = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastBroadcast);
+        auto timeSinceLastBroadcast =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now - lastBroadcast);
         
         if (timeSinceLastBroadcast.count() >= 10) {
             std::string gameState = SerializeEntityVector(entities);
@@ -338,8 +384,9 @@ void GameServer::Run() {
             lastBroadcast = now;
         }
 
-        float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
-        SDL_Delay(delay);
+        // Cap to ~60 FPS using the millisecond delta
+        float delay = std::max(0.0f, 1000.0f / 60.0f - deltaMs);
+        SDL_Delay(static_cast<Uint32>(delay));
     }
     
     std::cout << "Server loop ended" << std::endl;
