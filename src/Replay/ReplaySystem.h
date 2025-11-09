@@ -1,71 +1,160 @@
 #pragma once
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include "Events/EventSystem.h"
-#include "Events/EventTypes.h"
-
-
-typedef enum ReplayEventType {
-    START = EventType::EVENT_TYPE_REPLAY_START,
-    STOP = EventType::EVENT_TYPE_REPLAY_STOP
-} ReplayEventType;
-
-class ReplayRecorder {
-    EntityManager* entityManager = nullptr;
+/**
+ * ReplaySystem
+ *
+ * A small, modular system that records the last N seconds of arbitrary
+ * game state and can play that state back.
+ *
+ * It does not know anything about Entities, Physics, or the Event system.
+ * Instead, devs register "tracks" with capture/apply callbacks.
+ *
+ * Later, our EventManager can treat replay as just another track whose
+ * state is "list of events raised at this time-step".
+ */
+class ReplaySystem {
 public:
-    bool recording = false;
-    bool playing = false;
-    ReplayRecorder(EntityManager* entityManagerRef) : entityManager(entityManagerRef) 
-    {}
+    enum class Mode {
+        Idle,
+        Recording,
+        Playing
+    };
 
-    void Record() {
-        if (!recording)
-            return;
+    // bufferSeconds = how many seconds of history you want (e.g. 5.0f)
+    explicit ReplaySystem(float bufferSeconds = 5.0f);
 
-        // RECORDING LOGIC HERE
-        SDL_Log("Replay is being recorded\n");
-    }
+    // TState must be copyable.
+    // Returns a track id you can keep if you need it later.
+    template <typename TState>
+    int RegisterTrack(
+        const std::string& name,
+        std::function<TState()> captureFunc,
+        std::function<void(const TState&)> applyFunc);
 
-    void Play() {
-        if (!playing)
-            return;
-            
-        // MAYBE PLAYING LOGIC HERE?
-    }
-};
+    // Control API
+    void StartRecording();
+    void StopRecording();
 
+    // Begin playback of the last bufferSeconds that were recorded.
+    // If less than bufferSeconds were recorded, plays whatever is available.
+    void StartPlayback();
+    void StopPlayback();
 
-typedef struct ReplayEvent : public Event {
+    // Per-frame update. Call once per tick with your simulation delta time.
+    void Update(float deltaSeconds);
+
+    Mode GetMode() const { return mode; }
+
+    // Optional hooks future EventManager (or any other system)
+    // can subscribe to. For Milestone 4 they are dormant until we plug
+    // them into the event system.
+    void SetOnRecordingStarted(std::function<void()> cb) { onRecordingStarted = std::move(cb); }
+    void SetOnRecordingStopped (std::function<void()> cb) { onRecordingStopped  = std::move(cb); }
+    void SetOnPlaybackStarted  (std::function<void()> cb) { onPlaybackStarted   = std::move(cb); }
+    void SetOnPlaybackStopped  (std::function<void()> cb) { onPlaybackStopped   = std::move(cb); }
+
+    // How much usable data is currently stored.
+    float GetRecordedDuration() const { return recordedDuration; }
+
 private:
-    ReplayEvent() = default;
-public:
-    static ReplayEvent* Start() {
-        ReplayEvent* rpl = new ReplayEvent();
-        rpl->timestamp = 0.0;
-        rpl->type = ReplayEventType::START;
-        return rpl;
-    }
-    static ReplayEvent* Stop() {
-        ReplayEvent* rpl = new ReplayEvent();
-        rpl->timestamp = 0.0;
-        rpl->type = ReplayEventType::STOP;
-        return rpl;
-    }
-};
+    struct ITrack {
+        virtual ~ITrack() = default;
+        virtual void CaptureSample(float t) = 0;
+        virtual void ApplyAtTime(float t) = 0;
+        virtual float GetOldestTime() const = 0;
+        virtual float GetNewestTime() const = 0;
+        virtual void TrimOlderThan(float minTime) = 0;
+        virtual bool Empty() const = 0;
+    };
 
-class ReplayHandler : public EventHandler {
-    ReplayRecorder* rplRecordRef = nullptr;
-public:
-    ReplayHandler(ReplayRecorder* pRplRecordRef) : rplRecordRef(pRplRecordRef) 
-    {}
+    template <typename TState>
+    struct Track : ITrack {
+        struct Sample {
+            float t;
+            TState state;
+        };
 
-    void OnEvent(Event* E) override {
-        SDL_Log("Recording Event Launched.\n");
+        std::function<TState()> capture;
+        std::function<void(const TState&)> apply;
+        std::vector<Sample> samples;
 
-        if (E->type == ReplayEventType::START || E->type == ReplayEventType::STOP) { 
-            rplRecordRef->recording = (E->type == ReplayEventType::START);
+        explicit Track(std::function<TState()> c,
+                       std::function<void(const TState&)> a)
+            : capture(std::move(c)), apply(std::move(a)) {}
+
+        void CaptureSample(float t) override {
+            if (!capture) return;
+            samples.push_back(Sample{t, capture()});
         }
-    }
-    
-    
+
+        void ApplyAtTime(float t) override {
+            if (!apply || samples.empty()) return;
+
+            const Sample* best = &samples.front();
+            // Simple linear search is fine for 5 seconds of data;
+            // Can optimize to binary search later if needed.
+            for (const auto& s : samples) {
+                if (s.t <= t) best = &s;
+                else break;
+            }
+            apply(best->state);
+        }
+
+        float GetOldestTime() const override {
+            return samples.empty() ? 0.0f : samples.front().t;
+        }
+
+        float GetNewestTime() const override {
+            return samples.empty() ? 0.0f : samples.back().t;
+        }
+
+        void TrimOlderThan(float minTime) override {
+            while (!samples.empty() && samples.front().t < minTime) {
+                samples.erase(samples.begin());
+            }
+        }
+
+        bool Empty() const override {
+            return samples.empty();
+        }
+    };
+
+    void CaptureFrame();
+    void ApplyFrame();
+
+    float bufferLength;      // seconds to keep in memory (e.g., 5.0f)
+    float currentTime;       // time during recording
+    float playbackTime;      // time inside playback window
+    float playbackStartTime; // earliest timestamp we will play
+    float playbackEndTime;   // latest timestamp we will play
+    float recordedDuration;  // duration between oldest and newest sample
+
+    Mode mode;
+
+    std::vector<std::unique_ptr<ITrack>> tracks;
+
+    // Event hooks (initially unused, for future event system integration)
+    std::function<void()> onRecordingStarted;
+    std::function<void()> onRecordingStopped;
+    std::function<void()> onPlaybackStarted;
+    std::function<void()> onPlaybackStopped;
 };
 
+
+// Template implementation
+template <typename TState>
+int ReplaySystem::RegisterTrack(
+    const std::string& name,
+    std::function<TState()> captureFunc,
+    std::function<void(const TState&)> applyFunc)
+{
+    (void)name; // For now just kept for debugging / future tooling.
+    auto track = std::make_unique<Track<TState>>(std::move(captureFunc),
+                                                 std::move(applyFunc));
+    tracks.push_back(std::move(track));
+    return static_cast<int>(tracks.size() - 1);
+}
