@@ -66,6 +66,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
   eventManager = std::make_unique<EventManager>(rootTimeline.get());
+  replayRecorder = std::make_unique<ReplayRecorder>(entityManager.get());
   running = true;
   return true;
 }
@@ -97,6 +98,9 @@ void GameEngine::Run() {
     // update game
     Update(deltaTime / 1000.0, entities);
 
+    replayRecorder->Record();
+    replayRecorder->Play();
+    
     // Render
     Render(entities);
 

@@ -14,8 +14,8 @@ GameServer::GameServer() : GameEngine(true), isServerRunning(false), publisherPo
     zmqContext = std::make_unique<zmq::context_t>(1);
     publisherSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PUB);
     pullSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PULL);
-    rootTimeline = std::make_unique<Timeline>(1.0f, nullptr);
-    eventManager = std::make_unique<EventManager>(rootTimeline.get());
+    // rootTimeline = std::make_unique<Timeline>(1.0f, nullptr);
+    // eventManager = std::make_unique<EventManager>(rootTimeline.get());
 }
 
 GameServer::~GameServer() {
