@@ -39,7 +39,7 @@ int main() {
     // Set up the player entity factory - developers can customize this
     // This allows the engine to remain game-agnostic while letting developers
     // specify their own player entity class
-    server.SetPlayerEntityFactory([&server](SDL_Renderer* renderer) -> Entity* {
+    server.SetPlayerSpawnEvent([&server](SDL_Renderer* renderer) -> Entity* {
         return new TestEntity(100, 100, server.GetRootTimeline(), renderer);
     });
 

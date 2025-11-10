@@ -1,10 +1,15 @@
 // GameClient.h
 #pragma once
 #include "Core/GameEngine.h"
+#include "Events/EventSystem.h"
+#include "Events/EventTypes.h"
+#include "Replay/ReplaySystem.h"
+
 #include <zmq.hpp>
 #include <string>
 #include <map>
 #include <functional>
+
 
 // GameClient class that inherits from GameEngine
 class GameClient : public GameEngine {
