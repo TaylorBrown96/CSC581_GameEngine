@@ -80,6 +80,12 @@ public:
         events.push(E);
     }
 
+    void RaiseDelayed(Event* E, float delay) {
+        std::lock_guard<std::mutex> lock(eventsMutex);
+        E->timestamp = timeline->getElapsedTime() + delay;
+        events.push(E);
+    }
+
     void HandleCurrentEvents() {
         std::lock_guard<std::mutex> lock(eventsMutex);
         float currentTimestamp = timeline->getElapsedTime();
