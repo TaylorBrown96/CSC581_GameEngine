@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <sstream>
 #include "Events/InputEvent.h"
+#include "Replay/ReplayEvent.h"
+
 using namespace std;
 
 // GameServer Implementation
@@ -300,17 +302,18 @@ void GameServer::ProcessClientActions(const std::string& clientId,
     actions.swap(filtered);
 
     if (requestedReplay) {
-        auto* replay = GetReplaySystem();
-        if (replay && replay->GetMode() == ReplaySystem::Mode::Recording) {
-            // Switch server into playback mode
-            replay->StopRecording();
-            replay->StartPlayback();
+        eventManager->Raise(new ReplayStartEvent());
+        // auto* replay = GetReplaySystem();
+        // if (replay && replay->GetMode() == ReplaySystem::Mode::Recording) {
+        //     // Switch server into playback mode
+        //     replay->StopRecording();
+        //     replay->StartPlayback();
 
-            // Tell all clients to start their own replay playback
-            BroadcastGameState("REPLAY_START");
-            std::cout << "Replay requested by client " << clientId
-                      << " -> starting replay on all clients" << std::endl;
-        }
+        //     // Tell all clients to start their own replay playback
+        //     BroadcastGameState("REPLAY_START");
+        //     std::cout << "Replay requested by client " << clientId
+        //               << " -> starting replay on all clients" << std::endl;
+        // }
     }
 
     // Process remaining actions for the client
@@ -334,6 +337,7 @@ bool GameServer::Initialize(const char* title, int resx, int resy) {
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_INPUT, new InputEventHandler());
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_SPAWN, new SpawnEventHandler());
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_START, new ReplayHandler(GetReplaySystem(), this));
     // GetCollision()->SetEventManager(eventManager.get());
     // Server-specific initialization
     std::cout << "GameServer initialized with headless game engine" << std::endl;
