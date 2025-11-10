@@ -69,3 +69,12 @@ private:
     void SyncEntityWithStringData(Entity* entity, float x, float y, float offSetX, float offSetY, float width, float height, 
                                  float velX, float velY, int textureState, int currentFrame, bool visible);
 };
+
+
+class ReplayHandler : public EventHandler {
+  ReplayRecorder *rplRecordRef = nullptr;
+  GameClient* cl = nullptr;
+public:
+  ReplayHandler(ReplayRecorder *pRplRecordRef, GameClient* pcl) : rplRecordRef(pRplRecordRef), cl(pcl) {}
+  virtual void OnEvent(Event* E) override;
+};
