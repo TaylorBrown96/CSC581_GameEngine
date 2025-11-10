@@ -70,32 +70,20 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   }
 
   // Initialize systems
-<<<<<<< HEAD
   physics = std::make_unique<PhysicsSystem>(3);
   input = std::make_unique<InputManager>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
   rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
-=======
-  physics       = std::make_unique<PhysicsSystem>(3);
-  input         = std::make_unique<InputManager>();
-  collision     = std::make_unique<CollisionSystem>();
-  renderSystem  = std::make_unique<RenderSystem>(renderer, resx, resy);
-  rootTimeline  = std::make_unique<Timeline>(timeScale, nullptr);
->>>>>>> 369de1e (Added & implemented replay system)
   entityManager = std::make_unique<EntityManager>();
   eventManager = std::make_unique<EventManager>(rootTimeline.get());
   eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
   collision = std::make_unique<CollisionSystem>();
   collision->SetEventManager(eventManager.get());
 
-<<<<<<< HEAD
-  replayRecorder = std::make_unique<ReplayRecorder>(entityManager.get());
-=======
   // Replay system initialization: keep the last 5 seconds of history
   replaySystem = std::make_unique<ReplaySystem>(5.0f);
   replaySystem->StartRecording();
 
->>>>>>> 369de1e (Added & implemented replay system)
   running = true;
   return true;
 }
@@ -135,12 +123,9 @@ void GameEngine::Run() {
         }
       }
     }
-<<<<<<< HEAD
-    GetRootTimeline()->Update(deltaTime / 1000.0f);
+    GetRootTimeline()->Update(deltaTimeSec / 1000.0f);
     eventManager->HandleCurrentEvents();
     // } end handle events
-=======
->>>>>>> 369de1e (Added & implemented replay system)
 
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
@@ -150,8 +135,8 @@ void GameEngine::Run() {
     // Update game simulation + replay
     Update(deltaTimeSec, entities);
 
-    replayRecorder->Record();
-    replayRecorder->Play();
+    // replayRecorder->Record();
+    // replayRecorder->Play();
     
 
     // Render

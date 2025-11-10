@@ -362,7 +362,7 @@ void GameServer::Run() {
         if (entityMgr) {
             entities = entityMgr->getEntityVectorRef();
         }
-
+        eventManager->HandleCurrentEvents();
         // Update the root timeline and simulation in seconds
         GetRootTimeline()->Update(deltaSec);
         Update(deltaSec, entities);
