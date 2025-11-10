@@ -288,10 +288,6 @@ void GameClient::Run() {
     // We need to track running state ourselves since it's private in base class
     bool clientRunning = true;
 
-    if (replayRecorder && !replayRecorder->IsPlaying()) {
-        eventManager->Raise(ReplayEvent::Start());
-    }
-
     while (clientRunning) {
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
