@@ -61,31 +61,3 @@ public:
   void SetReplayDirectory(const std::string &directory);
 };
 
-class ReplayHandler : public EventHandler {
-  ReplayRecorder *rplRecordRef = nullptr;
-
-public:
-  ReplayHandler(ReplayRecorder *pRplRecordRef) : rplRecordRef(pRplRecordRef) {}
-
-  void OnEvent(Event *E) override {
-    SDL_Log("Recording Event Launched.\n");
-
-    if (!rplRecordRef)
-      return;
-
-    if (E->type == ReplayEventType::START) {
-      if (!rplRecordRef->IsRecording()) {
-        if (!rplRecordRef->StartRecording()) {
-          SDL_Log("Failed to start replay recording.");
-        }
-      }
-    } else if (E->type == ReplayEventType::STOP) {
-      if (rplRecordRef->IsRecording()) {
-        rplRecordRef->StopRecording();
-      }
-      if (rplRecordRef->IsPlaying()) {
-        rplRecordRef->StopPlayback();
-      }
-    }
-  }
-};

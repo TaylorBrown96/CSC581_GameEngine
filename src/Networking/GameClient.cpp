@@ -266,9 +266,12 @@ bool GameClient::Initialize(const char* title, int resx, int resy, float timeSca
     if (!GameEngine::Initialize(title, resx, resy, timeScale)) {
         return false;
     }
-    ReplayHandler* rplHandler = new ReplayHandler(replayRecorder.get());
+    ReplayHandler* rplHandler = new ReplayHandler(replayRecorder.get(), this);
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_START, rplHandler);
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_STOP, rplHandler);
+    eventManager->RegisterEventHandler(ReplayEventType::PLAY_START, rplHandler);
+    eventManager->RegisterEventHandler(ReplayEventType::PLAY_STOP, rplHandler);
+
     // Client-specific initialization
     std::cout << "GameClient " << clientId << " initialized" << std::endl;
     
@@ -337,21 +340,22 @@ void GameClient::Run() {
 
             if (inputManager->IsKeyPressed(SDL_SCANCODE_K)) {
                 if (replayRecorder && !replayRecorder->IsPlaying()) {
-                    std::string lastRecording = replayRecorder->GetLastCompletedRecordingFile();
-                    if (lastRecording.empty()) {
-                        SDL_Log("No completed replay file found to play.");
-                    } else if (StartReplayPlayback(lastRecording)) {
-                        SDL_Log("Replay playback started from %s", lastRecording.c_str());
-                    } else {
-                        SDL_Log("Failed to start replay playback from %s", lastRecording.c_str());
-                    }
+                    // std::string lastRecording = replayRecorder->GetLastCompletedRecordingFile();
+                    // if (lastRecording.empty()) {
+                    //     SDL_Log("No completed replay file found to play.");
+                    // } else if (StartReplayPlayback(lastRecording)) {
+                    //     SDL_Log("Replay playback started from %s", lastRecording.c_str());
+                    // } else {
+                    //     SDL_Log("Failed to start replay playback from %s", lastRecording.c_str());
+                    // }
+                    eventManager->Raise(ReplayEvent::PlayStart());
                 }
             }
 
             if (inputManager->IsKeyPressed(SDL_SCANCODE_L)) {
                 if (replayRecorder && replayRecorder->IsPlaying()) {
-                    StopReplayPlayback();
-                    SDL_Log("Replay playback stopped via F8.");
+                    eventManager->Raise(ReplayEvent::PlayStop());
+
                 }
             }
         }
@@ -512,3 +516,40 @@ void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, floa
 void GameClient::RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor) {
     entityFactory[entityType] = constructor;
 }
+
+void ReplayHandler::OnEvent(Event *E){
+    SDL_Log("Recording Event Launched.\n");
+
+    if (!rplRecordRef)
+      return;
+
+    if (E->type == ReplayEventType::START) {
+      if (!rplRecordRef->IsRecording()) {
+        if (!rplRecordRef->StartRecording()) {
+          SDL_Log("Failed to start replay recording.");
+        }
+      }
+    } else if (E->type == ReplayEventType::STOP) {
+      if (rplRecordRef->IsRecording()) {
+        rplRecordRef->StopRecording();
+      }
+      if (rplRecordRef->IsPlaying()) {
+        rplRecordRef->StopPlayback();
+      }
+    }
+    else if (E->type == ReplayEventType::PLAY_START) {
+      std::string lastRecording = rplRecordRef->GetLastCompletedRecordingFile();
+      if (lastRecording.empty()) {
+          SDL_Log("No completed replay file found to play.");
+      } else if (cl->StartReplayPlayback(lastRecording)) {
+          SDL_Log("Replay playback started from %s", lastRecording.c_str());
+      } else {
+          SDL_Log("Failed to start replay playback from %s", lastRecording.c_str());
+      }
+
+    }
+    else if (E->type == ReplayEventType::PLAY_STOP) {
+      cl->StopReplayPlayback();
+      SDL_Log("Replay playback stopped.");
+    }
+  }
