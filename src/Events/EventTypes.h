@@ -6,5 +6,4 @@ enum EventType {
     EVENT_TYPE_SPAWN = __INT_MAX__ - 3,
     EVENT_TYPE_REPLAY_START = __INT_MAX__ - 4,
     EVENT_TYPE_REPLAY_STOP = __INT_MAX__ - 5
-
 };

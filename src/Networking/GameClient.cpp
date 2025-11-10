@@ -327,27 +327,17 @@ void GameClient::Run() {
             if (inputManager->IsKeyPressed(SDL_SCANCODE_H)) {
                 if (replayRecorder && !replayRecorder->IsRecording() && !replayRecorder->IsPlaying()) {
                     eventManager->Raise(ReplayEvent::Start());
-                    SDL_Log("Replay recording requested via F5.");
                 }
             }
 
             if (inputManager->IsKeyPressed(SDL_SCANCODE_J)) {
                 if (replayRecorder && replayRecorder->IsRecording()) {
                     eventManager->Raise(ReplayEvent::Stop());
-                    SDL_Log("Replay recording stop requested via F6.");
                 }
             }
 
             if (inputManager->IsKeyPressed(SDL_SCANCODE_K)) {
                 if (replayRecorder && !replayRecorder->IsPlaying()) {
-                    // std::string lastRecording = replayRecorder->GetLastCompletedRecordingFile();
-                    // if (lastRecording.empty()) {
-                    //     SDL_Log("No completed replay file found to play.");
-                    // } else if (StartReplayPlayback(lastRecording)) {
-                    //     SDL_Log("Replay playback started from %s", lastRecording.c_str());
-                    // } else {
-                    //     SDL_Log("Failed to start replay playback from %s", lastRecording.c_str());
-                    // }
                     eventManager->Raise(ReplayEvent::PlayStart());
                 }
             }
