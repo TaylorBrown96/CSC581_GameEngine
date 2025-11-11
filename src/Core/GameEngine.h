@@ -64,7 +64,8 @@ class GameEngine {
   CollisionSystem *GetCollision() const { return collision.get(); }
   RenderSystem *GetRenderSystem() const { return renderSystem.get(); }
   SDL_Renderer *GetRenderer() const { return renderer; }
-
+  ReplayRecorder *GetReplayRecorder() const {return replayRecorder.get();}
+  EventManager *GetEventManager() const {return eventManager.get();}
   Timeline *GetRootTimeline() const { return rootTimeline.get(); }
 
 private:
