@@ -108,18 +108,17 @@ void ReplaySystem::Update(float deltaSeconds) {
             }
         }
 
-        if (anySamples) {
-            recordedDuration = newest - oldest;
-        } else {
-            recordedDuration = 0.0f;
-        }
-    } else if (mode == Mode::Playing) {
+        recordedDuration = anySamples ? (newest - oldest) : 0.0f;
+    }
+    else if (mode == Mode::Playing) {
         playbackTime += deltaSeconds;
         if (playbackTime > playbackEndTime) {
-            // End of replay window.
+            // Playback finished: go back to recording a fresh buffer.
             StopPlayback();
+            StartRecording();
             return;
         }
+
         ApplyFrame();
     }
 }
