@@ -39,7 +39,7 @@ class GameEngine {
   std::unique_ptr<Timeline> rootTimeline;
   std::unique_ptr<EntityManager> entityManager;
   std::unique_ptr<EventManager> eventManager;
-  std::unique_ptr<ReplayRecorder> replayRecorder;
+  // std::unique_ptr<ReplayRecorder> replayRecorder;
   JobSystem jobSystem;
 
 
@@ -66,7 +66,9 @@ class GameEngine {
   SDL_Renderer *GetRenderer() const { return renderer; }
 
   Timeline *GetRootTimeline() const { return rootTimeline.get(); }
+  ReplaySystem* GetReplaySystem() const { return replaySystem.get(); }
 
 private:
   void HandleEvents();
+  std::unique_ptr<ReplaySystem> replaySystem;
 };
