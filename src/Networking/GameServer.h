@@ -12,6 +12,8 @@
 
 #include <Events/EventSystem.h>
 #include <Events/EventTypes.h>
+#include <Memory/MemoryPool.h>
+
 
 // GameServer class that inherits from GameEngine
 class GameServer : public GameEngine {
@@ -91,9 +93,22 @@ private:
 
 
 struct SpawnEvent : public Event {
+    
 private:
     GameServer* srv;
 public:
+    inline static MemoryPool* SpawnPool;
+    void* operator new(size_t size) {
+        int q_id = SpawnEvent::SpawnPool->alloc();
+        if (q_id == -1)
+            return nullptr;
+        return SpawnEvent::SpawnPool->getPtr(q_id);
+    }
+
+    void operator delete(void* ptr) {
+        SpawnEvent::SpawnPool->freeSlot(SpawnEvent::SpawnPool->getSlot(ptr));
+    }
+
     std::string clientId;
     SpawnEvent(GameServer* psrv, std::string pclientId)
     : srv(psrv), clientId(pclientId) {
@@ -108,6 +123,9 @@ public:
 
 class SpawnEventHandler : public EventHandler {
     public:
+    SpawnEventHandler() {
+        SpawnEvent::SpawnPool = new MemoryPool(sizeof(SpawnEvent), 1024);
+    }
     void OnEvent(Event* E) override {
         if (E->type == EventType::EVENT_TYPE_SPAWN) { 
             SpawnEvent* spawnEvent = static_cast<SpawnEvent*>(E);

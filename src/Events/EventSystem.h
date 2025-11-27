@@ -70,6 +70,7 @@ public:
     EventManager(Timeline* tl) : timeline(tl) {}
    
     void RegisterEventHandler(int eventType, EventHandler* eventHandler) {
+
         EventHandlers[eventType].push_back(eventHandler);
     }
 
