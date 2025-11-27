@@ -33,6 +33,13 @@ bool GameClient::ConnectToServer(const std::string& address, int pubPort, int pu
     if (!clientId.empty()) {
         this->clientId = clientId;
     }
+
+    if (!subscriberSocket) {
+        subscriberSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_SUB);
+    }
+    if (!pushSocket) {
+        pushSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PUSH);
+    }
     
     serverAddress = address;
     serverPublisherPort = pubPort;
@@ -78,9 +85,11 @@ void GameClient::DisconnectFromServer() {
     // Close sockets
     if (subscriberSocket) {
         subscriberSocket->close();
+        subscriberSocket.reset();
     }
     if (pushSocket) {
         pushSocket->close();
+        pushSocket.reset();
     }
     
     isConnected = false;
@@ -98,6 +107,10 @@ void GameClient::SendMessageToServer(const std::string& message) {
 
 void GameClient::SendInputToServer() {
     if (!isConnected) {
+        return;
+    }
+
+    if (replayRecorder && replayRecorder->IsPlaying()) {
         return;
     }
     
@@ -132,40 +145,120 @@ std::string GameClient::GetLastGameState() {
     return lastReceivedGameState;
 }
 
+bool GameClient::StartReplayPlayback(const std::string& filePath) {
+    if (!replayRecorder) {
+        return false;
+    }
+
+    replayRecorder->StopRecording();
+    DisconnectFromServer();
+
+    playerEntityId = -1;
+    auto entityMgr = GetEntityManager();
+    if (entityMgr) {
+        entityMgr->ClearAllEntities();
+    }
+
+    bool started = replayRecorder->StartPlayback(filePath);
+    if (started) {
+        std::cout << "GameClient entering replay playback from " << replayRecorder->GetActivePlaybackFile() << std::endl;
+    }
+    return started;
+}
+
+void GameClient::StopReplayPlayback() {
+    if (!replayRecorder) {
+        return;
+    }
+
+    bool shouldReconnect = !isConnected && !serverAddress.empty();
+    std::string reconnectAddress = serverAddress;
+    int reconnectPubPort = serverPublisherPort;
+    int reconnectPullPort = serverPullPort;
+    std::string reconnectClientId = clientId;
+
+    replayRecorder->StopPlayback();
+    SDL_Log("Replay playback stopped.");
+
+    playerEntityId = -1;
+    auto entityMgr = GetEntityManager();
+    if (entityMgr) {
+        entityMgr->ClearAllEntities();
+    }
+
+    if (shouldReconnect) {
+        SDL_Log("Attempting to reconnect to server after replay playback.");
+        ConnectToServer(reconnectAddress, reconnectPubPort, reconnectPullPort, reconnectClientId);
+    }
+}
+
+bool GameClient::IsReplayPlaying() const {
+    return replayRecorder && replayRecorder->IsPlaying();
+}
+
 void GameClient::ProcessServerMessages() {
+    if (replayRecorder && replayRecorder->IsPlaying()) {
+        std::string replayMessage;
+        while (replayRecorder->TryGetNextPlaybackMessage(replayMessage)) {
+            HandleIncomingMessage(replayMessage);
+        }
+        return;
+    }
+
     if (!isConnected || !subscriberSocket) {
         return;
     }
-    
+
     zmq::message_t message;
     auto result = subscriberSocket->recv(message, zmq::recv_flags::dontwait);
-    
-    if (result) {
-        std::string messageStr(static_cast<char*>(message.data()), message.size());
-        
-        // Check if this is a PLAYER_ENTITY message
-        if (messageStr.find("PLAYER_ENTITY:") == 0 && playerEntityId == -1) {
-            // Format: "PLAYER_ENTITY:ClientId:EntityId"
-            size_t firstColon = messageStr.find(':');
-            size_t secondColon = messageStr.find(':', firstColon + 1);
-            
-            if (firstColon != std::string::npos && secondColon != std::string::npos) {
-                std::string targetClientId = messageStr.substr(firstColon + 1, secondColon - firstColon - 1);
-                
-                // Only process if this message is for us
-                if (targetClientId == clientId) {
-                    std::string entityIdStr = messageStr.substr(secondColon + 1);
-                    int entityId = std::stoi(entityIdStr);
-                    SetPlayerEntityId(entityId);
-                    std::cout << "Client " << clientId << " assigned player entity ID: " << entityId << std::endl;
-                }
-            }
-        } else {
-            // Process normal entity data
-            ProcessStringEntityData(messageStr);
-        }
+    if (!result) {
+        return;
     }
-    
+
+    std::string messageStr(static_cast<char*>(message.data()), message.size());
+    if (replayRecorder && replayRecorder->IsRecording()) {
+        replayRecorder->RecordMessage(messageStr);
+    }
+
+    HandleIncomingMessage(messageStr);
+}
+
+void GameClient::HandleIncomingMessage(const std::string& messageStr) {
+    if (messageStr.empty()) {
+        return;
+    }
+
+    lastReceivedGameState = messageStr;
+
+    if (messageStr.rfind("PLAYER_ENTITY:", 0) == 0) {
+        if (playerEntityId != -1) {
+            return;
+        }
+
+        size_t firstColon = messageStr.find(':');
+        size_t secondColon = messageStr.find(':', firstColon + 1);
+
+        if (firstColon == std::string::npos || secondColon == std::string::npos) {
+            return;
+        }
+
+        std::string targetClientId = messageStr.substr(firstColon + 1, secondColon - firstColon - 1);
+        if (targetClientId != clientId) {
+            return;
+        }
+
+        std::string entityIdStr = messageStr.substr(secondColon + 1);
+        try {
+            int entityId = std::stoi(entityIdStr);
+            SetPlayerEntityId(entityId);
+            std::cout << "Client " << clientId << " assigned player entity ID: " << entityId << std::endl;
+        } catch (const std::exception& ex) {
+            std::cerr << "Failed to parse player entity assignment: " << ex.what() << std::endl;
+        }
+        return;
+    }
+
+    ProcessStringEntityData(messageStr);
 }
 
 bool GameClient::Initialize(const char* title, int resx, int resy, float timeScale) {
@@ -173,9 +266,12 @@ bool GameClient::Initialize(const char* title, int resx, int resy, float timeSca
     if (!GameEngine::Initialize(title, resx, resy, timeScale)) {
         return false;
     }
-    ReplayHandler* rplHandler = new ReplayHandler(replayRecorder.get());
+    ReplayHandler* rplHandler = new ReplayHandler(replayRecorder.get(), this);
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_START, rplHandler);
     eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_STOP, rplHandler);
+    eventManager->RegisterEventHandler(ReplayEventType::PLAY_START, rplHandler);
+    eventManager->RegisterEventHandler(ReplayEventType::PLAY_STOP, rplHandler);
+
     // Client-specific initialization
     std::cout << "GameClient " << clientId << " initialized" << std::endl;
     
@@ -195,8 +291,6 @@ void GameClient::Run() {
     // We need to track running state ourselves since it's private in base class
     bool clientRunning = true;
 
-    eventManager->Raise(ReplayEvent::Start());
-
     while (clientRunning) {
         // Calculate delta time
         Uint32 currentTime = SDL_GetTicks();
@@ -210,6 +304,14 @@ void GameClient::Run() {
                 clientRunning = false;
             }
         }
+
+        bool replayWasPlaying = replayRecorder && replayRecorder->IsPlaying();
+        if (replayWasPlaying) {
+            replayRecorder->Play();
+            if (replayWasPlaying && replayRecorder && !replayRecorder->IsPlaying()) {
+                StopReplayPlayback();
+            }
+        }
         
         // Process server messages (non-blocking)
         ProcessServerMessages();
@@ -221,6 +323,31 @@ void GameClient::Run() {
         // Update input
         if (inputManager) {
             inputManager->Update();
+
+            if (inputManager->IsKeyPressed(SDL_SCANCODE_H)) {
+                if (replayRecorder && !replayRecorder->IsRecording() && !replayRecorder->IsPlaying()) {
+                    eventManager->Raise(ReplayEvent::Start());
+                }
+            }
+
+            if (inputManager->IsKeyPressed(SDL_SCANCODE_J)) {
+                if (replayRecorder && replayRecorder->IsRecording()) {
+                    eventManager->Raise(ReplayEvent::Stop());
+                }
+            }
+
+            if (inputManager->IsKeyPressed(SDL_SCANCODE_K)) {
+                if (replayRecorder && !replayRecorder->IsPlaying()) {
+                    eventManager->Raise(ReplayEvent::PlayStart());
+                }
+            }
+
+            if (inputManager->IsKeyPressed(SDL_SCANCODE_L)) {
+                if (replayRecorder && replayRecorder->IsPlaying()) {
+                    eventManager->Raise(ReplayEvent::PlayStop());
+
+                }
+            }
         }
         
         // Send input to server periodically (every 50ms)
@@ -230,7 +357,6 @@ void GameClient::Run() {
         }
         eventManager->HandleCurrentEvents();
         replayRecorder->Record();
-        replayRecorder->Play();
 
         Render(entities);
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
@@ -380,3 +506,40 @@ void GameClient::SyncEntityWithStringData(Entity* entity, float x, float y, floa
 void GameClient::RegisterEntity(const std::string& entityType, std::function<Entity*()> constructor) {
     entityFactory[entityType] = constructor;
 }
+
+void ReplayHandler::OnEvent(Event *E){
+    SDL_Log("Recording Event Launched.\n");
+
+    if (!rplRecordRef)
+      return;
+
+    if (E->type == ReplayEventType::START) {
+      if (!rplRecordRef->IsRecording()) {
+        if (!rplRecordRef->StartRecording()) {
+          SDL_Log("Failed to start replay recording.");
+        }
+      }
+    } else if (E->type == ReplayEventType::STOP) {
+      if (rplRecordRef->IsRecording()) {
+        rplRecordRef->StopRecording();
+      }
+      if (rplRecordRef->IsPlaying()) {
+        rplRecordRef->StopPlayback();
+      }
+    }
+    else if (E->type == ReplayEventType::PLAY_START) {
+      std::string lastRecording = rplRecordRef->GetLastCompletedRecordingFile();
+      if (lastRecording.empty()) {
+          SDL_Log("No completed replay file found to play.");
+      } else if (cl->StartReplayPlayback(lastRecording)) {
+          SDL_Log("Replay playback started from %s", lastRecording.c_str());
+      } else {
+          SDL_Log("Failed to start replay playback from %s", lastRecording.c_str());
+      }
+
+    }
+    else if (E->type == ReplayEventType::PLAY_STOP) {
+      cl->StopReplayPlayback();
+      SDL_Log("Replay playback stopped.");
+    }
+  }

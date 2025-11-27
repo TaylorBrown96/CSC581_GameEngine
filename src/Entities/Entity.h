@@ -56,7 +56,8 @@ vec2,
 PhysicsComponent, 
 Uint32,
 Entity*,
-CollisionComponent>;
+CollisionComponent,
+void*>;
 
 class Entity {
  private:
