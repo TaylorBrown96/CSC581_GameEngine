@@ -10,6 +10,11 @@
 #include <functional>
 #include <queue>
 
+#include <Events/EventSystem.h>
+#include <Events/EventTypes.h>
+#include <Memory/MemoryPool.h>
+
+
 // GameServer class that inherits from GameEngine
 class GameServer : public GameEngine {
 private:
@@ -57,9 +62,7 @@ public:
     // Server-specific methods
     bool StartServer(int pubPort, int pullPort);
     void StopServer();
-    void HandleClientConnections();
     void BroadcastGameState(const std::string& gameState);
-    void ProcessClientMessages();
     
     // Connection management
     void AddClient(const std::string& clientId);
@@ -67,7 +70,7 @@ public:
     std::vector<std::string> GetConnectedClients();
     
     // Player entity management
-    void SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory);
+    void SetPlayerSpawnEvent(std::function<Entity*(SDL_Renderer*)> factory);
     Entity* SpawnPlayerEntity(const std::string& clientId);
     void DespawnPlayerEntity(const std::string& clientId);
     Entity* GetPlayerEntity(const std::string& clientId);
@@ -86,4 +89,49 @@ private:
     void ProcessMessage(const std::string& message);
     void ProcessClientActions(const std::string& clientId, const std::string& actionsData);
     std::string SerializeEntityVector(const std::vector<Entity*>& entities);
+};
+
+
+struct SpawnEvent : public Event {
+    
+private:
+    GameServer* srv;
+public:
+    inline static MemoryPool* SpawnPool;
+    void* operator new(size_t size) {
+        int q_id = SpawnEvent::SpawnPool->alloc();
+        if (q_id == -1)
+            return nullptr;
+        return SpawnEvent::SpawnPool->getPtr(q_id);
+    }
+
+    void operator delete(void* ptr) {
+        SpawnEvent::SpawnPool->freeSlot(SpawnEvent::SpawnPool->getSlot(ptr));
+    }
+
+    std::string clientId;
+    SpawnEvent(GameServer* psrv, std::string pclientId)
+    : srv(psrv), clientId(pclientId) {
+        type = EventType::EVENT_TYPE_SPAWN;
+    }
+    GameServer* getGameServer() {
+        return srv;
+    }
+};
+ 
+
+
+class SpawnEventHandler : public EventHandler {
+    public:
+    SpawnEventHandler() {
+        SpawnEvent::SpawnPool = new MemoryPool(sizeof(SpawnEvent), 1024);
+    }
+    void OnEvent(Event* E) override {
+        if (E->type == EventType::EVENT_TYPE_SPAWN) { 
+            SpawnEvent* spawnEvent = static_cast<SpawnEvent*>(E);
+            SDL_Log("In here\n");
+
+            spawnEvent->getGameServer()->SpawnPlayerEntity(spawnEvent->clientId);
+        }
+    }
 };

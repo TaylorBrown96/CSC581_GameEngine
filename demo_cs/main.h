@@ -5,7 +5,21 @@
 // #include <memory>
 
 class TestEntity : public Entity {
+  inline static MemoryPool* TestEntityMemoryPool = nullptr;
  public:
+  void* operator new(size_t size) {
+    if (!TestEntity::TestEntityMemoryPool)
+      TestEntity::TestEntityMemoryPool = new MemoryPool(sizeof(TestEntity), 128);
+    int sl_id = TestEntity::TestEntityMemoryPool->alloc();
+    if (sl_id == -1)
+      return nullptr;
+    return TestEntity::TestEntityMemoryPool->getPtr(sl_id);
+  }
+
+  void operator delete(void* ptr) {
+    TestEntity::TestEntityMemoryPool->freeSlot(TestEntity::TestEntityMemoryPool->getSlot(ptr));
+  }
+
   TestEntity(float x, float y, Timeline *tl, SDL_Renderer *renderer) : Entity(x, y, 128, 128, tl) {
     EnablePhysics(true);
     EnableCollision(false, false);
@@ -159,7 +173,21 @@ class TestEntity : public Entity {
   }
 };
 class Platform : public Entity {
+ inline static MemoryPool* PlatformMemoryPool = nullptr;
  public:
+  void* operator new(size_t size) {
+    if (!Platform::PlatformMemoryPool)
+      Platform::PlatformMemoryPool = new MemoryPool(sizeof(TestEntity), 128);
+    int sl_id = Platform::PlatformMemoryPool->alloc();
+    if (sl_id == -1)
+      return nullptr;
+    return Platform::PlatformMemoryPool->getPtr(sl_id);
+  }
+
+  void operator delete(void* ptr) {
+    Platform::PlatformMemoryPool->freeSlot(Platform::PlatformMemoryPool->getSlot(ptr));
+  }
+
   Platform(float x, float y, float w = 200, float h = 20, bool moving = false, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr)
       : Entity(x, y, w, h, tl) {
     entityType = "Platform";
@@ -209,7 +237,21 @@ class Platform : public Entity {
 };
 
 class ScrollBoundary : public Entity {
+ inline static MemoryPool* ScrollBoundaryMemoryPool = nullptr;
  public:
+  void* operator new(size_t size) {
+    if (!ScrollBoundary::ScrollBoundaryMemoryPool)
+      ScrollBoundary::ScrollBoundaryMemoryPool = new MemoryPool(sizeof(TestEntity), 128);
+    int sl_id = ScrollBoundary::ScrollBoundaryMemoryPool->alloc();
+    if (sl_id == -1)
+      return nullptr;
+    return ScrollBoundary::ScrollBoundaryMemoryPool->getPtr(sl_id);
+  }
+
+  void operator delete(void* ptr) {
+    ScrollBoundary::ScrollBoundaryMemoryPool->freeSlot(ScrollBoundary::ScrollBoundaryMemoryPool->getSlot(ptr));
+  }
+
   ScrollBoundary(float x, float y, float w, float h, Timeline *tl = nullptr, SDL_Renderer *renderer = nullptr, float maxOffsetX = 0.0f)
       : Entity(x, y, w, h, tl) {
     entityType = "ScrollBoundary";

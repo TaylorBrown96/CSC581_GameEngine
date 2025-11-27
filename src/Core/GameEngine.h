@@ -11,6 +11,10 @@
 #include "Physics/Physics.h"
 #include "Render.h"
 #include "Timeline/Timeline.h"
+#include "Events/EventSystem.h"
+#include "Events/EventTypes.h"
+#include "Replay/ReplaySystem.h"
+
 #include <vector>
 
 
@@ -34,6 +38,8 @@ class GameEngine {
   std::unique_ptr<RenderSystem> renderSystem;
   std::unique_ptr<Timeline> rootTimeline;
   std::unique_ptr<EntityManager> entityManager;
+  std::unique_ptr<EventManager> eventManager;
+  std::unique_ptr<ReplayRecorder> replayRecorder;
   JobSystem jobSystem;
 
 
