@@ -75,6 +75,8 @@ class ReplayHandler : public EventHandler {
   ReplayRecorder *rplRecordRef = nullptr;
   GameClient* cl = nullptr;
 public:
-  ReplayHandler(ReplayRecorder *pRplRecordRef, GameClient* pcl) : rplRecordRef(pRplRecordRef), cl(pcl) {}
+  ReplayHandler(ReplayRecorder *pRplRecordRef, GameClient* pcl) : rplRecordRef(pRplRecordRef), cl(pcl) {
+    ReplayEvent::CreateMemPool(1024);
+  }
   virtual void OnEvent(Event* E) override;
 };
