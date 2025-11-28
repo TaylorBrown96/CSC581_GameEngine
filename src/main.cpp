@@ -10,6 +10,9 @@ int main(int argc, char *argv[]) {
   if (!engine.Initialize("Game Engine", 1800, 1000, 1.0f)) {
     return 1;
   }
+
+  InputManager* input = engine.GetInput();
+
   engine.GetRenderSystem()->SetScalingMode(ScalingMode::PROPORTIONAL);
   Timeline *halfTimeline = new Timeline(0.5, engine.GetRootTimeline());
   Timeline *doubleTimeline = new Timeline(2.0, engine.GetRootTimeline());

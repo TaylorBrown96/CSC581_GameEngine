@@ -7,20 +7,30 @@
 using namespace std;
 
 // GameEngine Implementation
-GameEngine::GameEngine() : window(nullptr), renderer(nullptr), running(false), headlessMode(false), jobSystem(2) {}
-GameEngine::GameEngine(bool headless) : window(nullptr), renderer(nullptr), running(false), headlessMode(headless), jobSystem(2) {}
+GameEngine::GameEngine()
+    : window(nullptr),
+      renderer(nullptr),
+      running(false),
+      headlessMode(false),
+      jobSystem(2) {}
 
+GameEngine::GameEngine(bool headless)
+    : window(nullptr),
+      renderer(nullptr),
+      running(false),
+      headlessMode(headless),
+      jobSystem(2) {}
 
 GameEngine::~GameEngine() { Shutdown(); }
 
-bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale = 1.0f) {
+bool GameEngine::Initialize(const char *title, int resx, int resy, float timeScale) {
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     SDL_Log("Failed to initialize SDL: %s", SDL_GetError());
     return false;
   }
 
-  if(timeScale < 0.5 || timeScale > 2.0) {
+  if (timeScale < 0.5 || timeScale > 2.0) {
     SDL_Log("Time scale must be between 0.5 and 2.0");
     return false;
   }
@@ -28,6 +38,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   tickRate = 60.0f * timeScale;
   winsizeX = resx;
   winsizeY = resy;
+
   if (!headlessMode) {
     // Create window normally
     window = SDL_CreateWindow(title, resx, resy, SDL_WINDOW_RESIZABLE);
@@ -79,32 +90,35 @@ void GameEngine::Run() {
   Uint32 lastTime = SDL_GetTicks();
 
   while (running) {
-    // Calculate delta time
+    // Calculate delta time (ms)
     Uint32 currentTime = SDL_GetTicks();
     float deltaTime = (float)(currentTime - lastTime);
     lastTime = currentTime;
 
-    // Handle events {
+    // Handle events
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT ||
           input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
       }
     }
+
+    // Deterministic input update: MUST be before gameplay logic
+    input->Update();
+
     GetRootTimeline()->Update(deltaTime / 1000.0f);
     eventManager->HandleCurrentEvents();
-    // } end handle events
 
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
-    // Update engine systems in parallel
-    UpdateSystemsParallel(deltaTime / 1000.0);
-    // update game
-    Update(deltaTime / 1000.0, entities);
+    // Update engine systems in parallel (currently just timeline)
+    UpdateSystemsParallel(deltaTime / 1000.0f);
+
+    // Update game entities
+    Update(deltaTime / 1000.0f, entities);
 
     replayRecorder->Record();
     replayRecorder->Play();
-    
 
     // Render
     Render(entities);
@@ -119,9 +133,10 @@ void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
   for (auto &entity : entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
     entity->Update(entityDeltaTime, input.get(), entityManager.get());
-
   }
+
   physics->ApplyPhysicsMultithreaded(entities);
+
   // Process collisions
   collision->ProcessCollisions(entities);
 }
@@ -140,6 +155,7 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
     renderSystem->screenHeight = (float)h;
     renderSystem->screenWidth = (float)w;
   }
+
   // Clear screen to blue as required
   renderSystem->SetBackgroundColor(0, 100, 200);  // Blue background
   renderSystem->Clear();
@@ -157,16 +173,12 @@ void GameEngine::Render(std::vector<Entity *> &entities) {
 void GameEngine::UpdateSystemsParallel(float deltaTime) {
   // Clear the job queue for new frame
   jobSystem.ClearJobs();
-  
-  // Add parallel system updates
-  jobSystem.AddJob([this]() {
-    input->Update();
-  });
-  
+
+  // Timeline update can be parallelized if needed
   jobSystem.AddJob([this, deltaTime]() {
     rootTimeline->Update(deltaTime);
   });
-  
+
   // Execute all engine system updates in parallel
   jobSystem.ExecuteJobs();
 }

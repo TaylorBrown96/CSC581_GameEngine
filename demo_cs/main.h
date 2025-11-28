@@ -53,69 +53,84 @@ class TestEntity : public Entity {
 
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
-    (void)entitySpawner;
-    
-    // Update animation
-    Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
-    int animationDelay = getComponent<int>("animationDelay");
-    lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
-    if (lastFrameTime >= (Uint32)animationDelay) {
-      rendering.currentFrame = (rendering.currentFrame + 1) % rendering.textures[rendering.currentTextureState].num_frames_x;
-      lastFrameTime = 0;
-    }
-    setComponent("lastFrameTime", lastFrameTime);
+      (void)entitySpawner;
 
-    // Reset grounded state each frame (will be set by collision if on platform)
-    setComponent("grounded", false);
-    
-    // Bounce off screen edges (demonstrates entity system working) using window
-    // bounds push opposite direction
-    if (position.x <= 0) {
-      position.x = 0;
-    }
-
-    // Reset if falls off bottom (demonstrates physics working)
-    if (position.y > 1080) { // fell off bottom of screen
-      position.x = 100;
-      position.y = 100;
-      SetVelocityY(0.0f);
-      setComponent("grounded", false);
-      setComponent("groundRef", static_cast<Entity*>(nullptr));
-    }
-
-    // Handle pause toggle (only on key press, not while held)
-    static bool pKeyWasPressed = false;
-    bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
-    
-    if (pKeyIsPressed && !pKeyWasPressed) {
-      // Key was just pressed (not held)
-      if (timeline->getState() == Timeline::State::PAUSE) {
-        timeline->setState(Timeline::State::RUN);
-      } else {
-        timeline->setState(Timeline::State::PAUSE);
+      Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
+      int animationDelay = getComponent<int>("animationDelay");
+      lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
+      if (lastFrameTime >= (Uint32)animationDelay) {
+        rendering.currentFrame =
+            (rendering.currentFrame + 1) %
+            rendering.textures[rendering.currentTextureState].num_frames_x;
+        lastFrameTime = 0;
       }
-    }
-    pKeyWasPressed = pKeyIsPressed;
+      setComponent("lastFrameTime", lastFrameTime);
 
-    // Speed up and slow down the timeline for this entity
-    static bool iKeyWasPressed = false;
-    static bool oKeyWasPressed = false;
-    static bool uKeyWasPressed = false;
-    bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
-    bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
-    bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
-    if (iKeyIsPressed && !iKeyWasPressed) {
-      timeline->setScale(timeline->getScale() - 0.5f);
-    }
-    if (oKeyIsPressed && !oKeyWasPressed) {
-      timeline->setScale(timeline->getScale() + 0.5f);
-    }
-    if (uKeyIsPressed && !uKeyWasPressed) {
-      timeline->setScale(0.5f);
-    }
-    iKeyWasPressed = iKeyIsPressed;
-    oKeyWasPressed = oKeyIsPressed;
-    uKeyWasPressed = uKeyIsPressed;
+      setComponent("grounded", false);
+
+      if (position.x <= 0) {
+        position.x = 0;
+      }
+
+      if (position.y > 1080) {
+        position.x = 100;
+        position.y = 100;
+        SetVelocityY(0.0f);
+        setComponent("grounded", false);
+        setComponent("groundRef", static_cast<Entity*>(nullptr));
+      }
+
+      static bool pKeyWasPressed = false;
+      bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
+
+      if (pKeyIsPressed && !pKeyWasPressed) {
+        if (timeline->getState() == Timeline::State::PAUSE) {
+          timeline->setState(Timeline::State::RUN);
+        } else {
+          timeline->setState(Timeline::State::PAUSE);
+        }
+      }
+      pKeyWasPressed = pKeyIsPressed;
+
+      static bool iKeyWasPressed = false;
+      static bool oKeyWasPressed = false;
+      static bool uKeyWasPressed = false;
+
+      bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
+      bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
+      bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
+
+      if (iKeyIsPressed && !iKeyWasPressed) {
+        timeline->setScale(timeline->getScale() - 0.5f);
+      }
+      if (oKeyIsPressed && !oKeyWasPressed) {
+        timeline->setScale(timeline->getScale() + 0.5f);
+      }
+      if (uKeyIsPressed && !uKeyWasPressed) {
+        timeline->setScale(0.5f);
+      }
+
+      iKeyWasPressed = iKeyIsPressed;
+      oKeyWasPressed = oKeyIsPressed;
+      uKeyWasPressed = uKeyIsPressed;
+
+      if (input->WasSequenceTriggered("DASH_RIGHT")) {
+        std::cout << "[SEQ] DASH_RIGHT triggered!\n";
+        SetVelocityX(900.0f);
+        setComponent("playerInputDirection", 1);
+      }
+
+      if (input->WasSequenceTriggered("DASH_LEFT")) {
+        std::cout << "[SEQ] DASH_LEFT triggered!\n";
+        SetVelocityX(-900.0f);
+        setComponent("playerInputDirection", -1);
+      }
+
+      // Example extra sequence (optional)
+      if (input->WasSequenceTriggered("MEGA_JUMP")) {
+        std::cout << "[SEQ] MEGA_JUMP triggered!\n";
+        SetVelocityY(-2000.0f);
+      }
   }
 
   void OnActivity(const std::string& actionName) override {
