@@ -113,29 +113,12 @@ class TestEntity : public Entity {
       iKeyWasPressed = iKeyIsPressed;
       oKeyWasPressed = oKeyIsPressed;
       uKeyWasPressed = uKeyIsPressed;
-
-      if (input->WasSequenceTriggered("DASH_RIGHT")) {
-        std::cout << "[SEQ] DASH_RIGHT triggered!\n";
-        SetVelocityX(900.0f);
-        setComponent("playerInputDirection", 1);
-      }
-
-      if (input->WasSequenceTriggered("DASH_LEFT")) {
-        std::cout << "[SEQ] DASH_LEFT triggered!\n";
-        SetVelocityX(-900.0f);
-        setComponent("playerInputDirection", -1);
-      }
-
-      // Example extra sequence (optional)
-      if (input->WasSequenceTriggered("MEGA_JUMP")) {
-        std::cout << "[SEQ] MEGA_JUMP triggered!\n";
-        SetVelocityY(-2000.0f);
-      }
   }
 
   void OnActivity(const std::string& actionName) override {
     // speeds
     constexpr float runSpeed = 200.0f;
+    constexpr float dashSpeed = 900.0f;
     
     // Get ground reference and grounded state
     Entity* groundRef = getComponent<Entity*>("groundRef");
@@ -149,10 +132,20 @@ class TestEntity : public Entity {
       // Move right at constant speed, ignoring platform motion
       SetVelocityX(runSpeed);
       setComponent("playerInputDirection", 1);
-    } else if (actionName == "JUMP" && grounded) {
+    } 
+    else if (actionName == "JUMP" && grounded) {
       SetVelocityY(-1500.0f);
       setComponent("grounded", false);
       setComponent("wasGrounded", false);
+    } 
+    else if (actionName == "DASH_LEFT") {
+      // Dash left (chord: Shift + A)
+      SetVelocityX(-dashSpeed);
+      setComponent("playerInputDirection", -1);
+    } else if (actionName == "DASH_RIGHT") {
+      // Dash right (chord: Shift + D)
+      SetVelocityX(dashSpeed);
+      setComponent("playerInputDirection", 1);
     } else if (actionName == "IDLE") {
       // Stop horizontal movement, inherit platform velocity when grounded
       const float carrierVX = (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;

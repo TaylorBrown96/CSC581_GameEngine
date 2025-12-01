@@ -22,7 +22,7 @@ public:
             return;
 
         // RECORDING LOGIC HERE
-        SDL_Log("Replay is being recorded\n");
+        // SDL_Log("Replay is being recorded\n");
     }
 
     void Play() {

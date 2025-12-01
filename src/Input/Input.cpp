@@ -4,9 +4,6 @@
 InputManager::InputManager() : keyboardState(nullptr) {}
 
 void InputManager::Update() {
-    sequencesTriggeredThisFrame.clear();
-
-    // Query SDL for current keyboard state
     int numKeys = 0;
     const bool* state = SDL_GetKeyboardState(&numKeys);
 
@@ -22,51 +19,11 @@ void InputManager::Update() {
             prev = it->second;
         }
 
-        // Just pressed edge?
-        if (current && !prev) {
-            // Store the press event for sequence checking
-            recentPresses.push_back({ (SDL_Scancode)sc, now });
-        }
-
         // Update previousKeyState for next frame
         previousKeyState[(SDL_Scancode)sc] = current;
     }
 
     keyboardState = state;
-
-    // Trim old press history
-    recentPresses.erase(
-        std::remove_if(recentPresses.begin(), recentPresses.end(),
-            [now, this](const PressRecord& r) {
-                return (now - r.timeMs) > maxHistoryMs;
-            }),
-        recentPresses.end()
-    );
-
-    // Sequence Matching
-    for (const auto& seq : sequences) {
-        const auto& keys = seq.keys;
-        if (keys.empty()) continue;
-
-        int seqIndex = (int)keys.size() - 1;
-        Uint32 lastMatchTime = now;
-
-        // Scan backwards through press records
-        for (int i = (int)recentPresses.size() - 1; i >= 0 && seqIndex >= 0; i--) {
-            if (recentPresses[i].key == keys[seqIndex]) {
-                Uint32 gap = lastMatchTime - recentPresses[i].timeMs;
-                if (gap > seq.maxGapMs)
-                    break;
-
-                lastMatchTime = recentPresses[i].timeMs;
-                seqIndex--;
-            }
-        }
-
-        if (seqIndex < 0) {
-            sequencesTriggeredThisFrame.push_back(seq.name);
-        }
-    }
 }
 
 bool InputManager::IsKeyPressed(SDL_Scancode scancode) const {
@@ -101,14 +58,27 @@ bool InputManager::IsKeyJustReleased(SDL_Scancode scancode) const {
 
 // Action mapping
 void InputManager::AddAction(const std::string& actionName, SDL_Scancode key) {
-    actionToKeys[actionName].push_back(key);
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = false;
+    trigger.keys.clear();
+    trigger.keys.push_back(key);
     keyToAction[key] = actionName;
 }
 
 void InputManager::AddAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys) {
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = false;  // Multiple keys as alternatives (OR logic)
+    trigger.keys = keys;
     for (auto& key : keys) {
-        AddAction(actionName, key);
+        keyToAction[key] = actionName;
     }
+}
+
+void InputManager::AddChordAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys) {
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = true;  // All keys must be pressed simultaneously (AND logic)
+    trigger.keys = keys;
+    // Don't add to keyToAction for chords since individual keys shouldn't trigger the action
 }
 
 bool InputManager::IsActionActive(const std::string& actionName) const {
@@ -116,11 +86,26 @@ bool InputManager::IsActionActive(const std::string& actionName) const {
 
     auto it = actionToKeys.find(actionName);
     if (it == actionToKeys.end()) return false;
-
-    for (auto key : it->second) {
-        if (keyboardState[key]) return true;
+    
+    const ActionTrigger& trigger = it->second;
+    
+    // If it's a chord, all keys must be pressed (AND logic)
+    if (trigger.isKeyChord) {
+        for (auto key : trigger.keys) {
+            if (!keyboardState[key]) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        // If it's not a chord, any key can trigger it (OR logic)
+        for (auto key : trigger.keys) {
+            if (keyboardState[key]) {
+                return true;
+            }
+        }
+        return false;
     }
-    return false;
 }
 
 std::vector<std::string> InputManager::GetActiveActions() const {
@@ -133,21 +118,4 @@ std::vector<std::string> InputManager::GetActiveActions() const {
         }
     }
     return activeActions;
-}
-
-// Sequence API
-void InputManager::RegisterSequence(const std::string& name,
-                                    const std::vector<SDL_Scancode>& keys,
-                                    Uint32 maxGapMs) {
-    sequences.push_back({ name, keys, maxGapMs });
-}
-
-bool InputManager::WasSequenceTriggered(const std::string& name) const {
-    return std::find(sequencesTriggeredThisFrame.begin(),
-                     sequencesTriggeredThisFrame.end(),
-                     name) != sequencesTriggeredThisFrame.end();
-}
-
-const std::vector<std::string>& InputManager::GetTriggeredSequences() const {
-    return sequencesTriggeredThisFrame;
 }

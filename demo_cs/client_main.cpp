@@ -24,9 +24,20 @@ int main() {
     std::string serverAddress = "localhost";
     int publisherPort = 5555;
     int pullPort = 5556;
+    // Register single-key action
+
     client.GetInput()->AddAction("MOVE_LEFT", SDL_SCANCODE_A);
     client.GetInput()->AddAction("MOVE_RIGHT", SDL_SCANCODE_D);
     client.GetInput()->AddAction("JUMP", SDL_SCANCODE_SPACE);
+    
+    // Register chord actions (multiple keys pressed simultaneously)
+    // MEGA_JUMP: Shift + Space (both must be pressed together)
+    // DASH_LEFT: Shift + A (both must be pressed together)
+
+    client.GetInput()->AddChordAction("DASH_LEFT", {SDL_SCANCODE_LSHIFT, SDL_SCANCODE_A});
+    // DASH_RIGHT: Shift + D (both must be pressed together)
+    client.GetInput()->AddChordAction("DASH_RIGHT", {SDL_SCANCODE_LSHIFT, SDL_SCANCODE_D});
+    
     std::cout << "Connecting to server at " << serverAddress << ":" << publisherPort << "/" << pullPort << std::endl;
     
     if (!client.ConnectToServer(serverAddress, publisherPort, pullPort)) {
@@ -36,7 +47,12 @@ int main() {
     
     std::cout << "Client connected successfully!" << std::endl;
     std::cout << "Client ID: " << client.GetClientId() << std::endl;
-    std::cout << "Use WASD keys to move, SPACE to jump, ESC to exit" << std::endl;
+    std::cout << "Controls:" << std::endl;
+    std::cout << "  A/D - Move left/right" << std::endl;
+    std::cout << "  SPACE - Jump" << std::endl;
+    std::cout << "  Shift+A - Dash left (chord)" << std::endl;
+    std::cout << "  Shift+D - Dash right (chord)" << std::endl;
+    std::cout << "  ESC - Exit" << std::endl;
     std::cout << "The client will send input to server and receive game state updates" << std::endl;
     
     // Run the client (this will handle input, networking, and rendering)
