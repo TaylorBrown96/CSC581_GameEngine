@@ -78,6 +78,8 @@ class Entity {
 
   bool collisionEnabled = false;
   
+  bool isPlayerControllable = false;
+  
   Timeline *timeline = nullptr;
 
   RenderComponent rendering;
@@ -127,6 +129,9 @@ class Entity {
 
   int GetId() const { return id; }
   void SetId(int id) { this->id = id; }
+
+  bool IsPlayerControllable() const { return isPlayerControllable; }
+  void SetPlayerControllable(bool controllable) { isPlayerControllable = controllable; }
 
   void EnableCollision(bool ghostEntity = false, bool isKinematic = true) {
     collisionEnabled = true;

@@ -1,6 +1,7 @@
 // GameEngine.cpp
 // #include <memory>
 #include "GameEngine.h"
+#include "Events/InputEvent.h"
 
 #include <algorithm>
 #include <iostream>
@@ -77,6 +78,7 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   entityManager = std::make_unique<EntityManager>();
   eventManager = std::make_unique<EventManager>(rootTimeline.get());
   eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
+  eventManager->RegisterEventHandler(EventType::EVENT_TYPE_INPUT, new InputEventHandler());
   collision = std::make_unique<CollisionSystem>();
   collision->SetEventManager(eventManager.get());
 
@@ -129,6 +131,16 @@ void GameEngine::Run() {
 }
 
 void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
+  // Get active input actions and process them for player entities
+  std::vector<std::string> activeActions = input->GetActiveActions();
+  
+  // Process input for all player-controllable entities
+  for (auto &entity : entities) {
+    if (entity->IsPlayerControllable()) {
+      ProcessInputForEntity(entity, activeActions);
+    }
+  }
+
   // Update all entities
   for (auto &entity : entities) {
     float entityDeltaTime = entity->timeline->getDeltaTime();
@@ -139,6 +151,22 @@ void GameEngine::Update(float deltaTime, std::vector<Entity *> &entities) {
 
   // Process collisions
   collision->ProcessCollisions(entities);
+}
+
+void GameEngine::ProcessInputForEntity(Entity* entity, const std::vector<std::string>& actions) {
+  if (!entity) return;
+  
+  // Process each action for the entity
+  // This follows the same pattern as GameServer::ProcessClientActions
+  if (actions.empty()) {
+    // No active actions, send IDLE action (empty string)
+    eventManager->Raise(new InputEvent("IDLE", entity));
+  } else {
+    // Raise an event for each active action
+    for (const auto &action : actions) {
+      eventManager->Raise(new InputEvent(action, entity));
+    }
+  }
 }
 
 void GameEngine::Render(std::vector<Entity *> &entities) {
