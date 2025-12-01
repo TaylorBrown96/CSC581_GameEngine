@@ -173,7 +173,9 @@ bool GameClient::Initialize(const char* title, int resx, int resy, float timeSca
     if (!GameEngine::Initialize(title, resx, resy, timeScale)) {
         return false;
     }
-    
+    ReplayHandler* rplHandler = new ReplayHandler(replayRecorder.get());
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_START, rplHandler);
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_REPLAY_STOP, rplHandler);
     // Client-specific initialization
     std::cout << "GameClient " << clientId << " initialized" << std::endl;
     
@@ -192,6 +194,8 @@ void GameClient::Run() {
 
     // We need to track running state ourselves since it's private in base class
     bool clientRunning = true;
+
+    eventManager->Raise(ReplayEvent::Start());
 
     while (clientRunning) {
         // Calculate delta time
@@ -224,6 +228,10 @@ void GameClient::Run() {
             SendInputToServer();
             lastInputSend = currentTime;
         }
+        eventManager->HandleCurrentEvents();
+        replayRecorder->Record();
+        replayRecorder->Play();
+
         Render(entities);
         float delay = std::max(0.0, 1000.0 / 60.0 - deltaTime);
         SDL_Delay(delay);
@@ -233,6 +241,8 @@ void GameClient::Run() {
 void GameClient::Shutdown() {
     DisconnectFromServer();
     // Call base class shutdown
+    eventManager->Raise(ReplayEvent::Stop());
+
     GameEngine::Shutdown();
 }
 

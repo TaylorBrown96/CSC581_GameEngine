@@ -61,11 +61,15 @@ bool GameEngine::Initialize(const char *title, int resx, int resy, float timeSca
   // Initialize systems
   physics = std::make_unique<PhysicsSystem>(3);
   input = std::make_unique<InputManager>();
-  collision = std::make_unique<CollisionSystem>();
   renderSystem = std::make_unique<RenderSystem>(renderer, resx, resy);
   rootTimeline = std::make_unique<Timeline>(timeScale, nullptr);
   entityManager = std::make_unique<EntityManager>();
+  eventManager = std::make_unique<EventManager>(rootTimeline.get());
+  eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
+  collision = std::make_unique<CollisionSystem>();
+  collision->SetEventManager(eventManager.get());
 
+  replayRecorder = std::make_unique<ReplayRecorder>(entityManager.get());
   running = true;
   return true;
 }
@@ -80,19 +84,27 @@ void GameEngine::Run() {
     float deltaTime = (float)(currentTime - lastTime);
     lastTime = currentTime;
 
-    // Handle events
+    // Handle events {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_EVENT_QUIT ||
           input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) {
         running = false;
       }
     }
+    GetRootTimeline()->Update(deltaTime / 1000.0f);
+    eventManager->HandleCurrentEvents();
+    // } end handle events
+
     std::vector<Entity *> &entities = entityManager->getEntityVectorRef();
 
     // Update engine systems in parallel
     UpdateSystemsParallel(deltaTime / 1000.0);
     // update game
     Update(deltaTime / 1000.0, entities);
+
+    replayRecorder->Record();
+    replayRecorder->Play();
+    
 
     // Render
     Render(entities);

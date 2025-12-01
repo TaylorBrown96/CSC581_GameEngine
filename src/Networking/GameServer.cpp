@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 #include <algorithm>
 #include <sstream>
+#include "Events/InputEvent.h"
 using namespace std;
 
 // GameServer Implementation
@@ -13,7 +14,8 @@ GameServer::GameServer() : GameEngine(true), isServerRunning(false), publisherPo
     zmqContext = std::make_unique<zmq::context_t>(1);
     publisherSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PUB);
     pullSocket = std::make_unique<zmq::socket_t>(*zmqContext, ZMQ_PULL);
-    rootTimeline = std::make_unique<Timeline>(1.0f, nullptr);
+    // rootTimeline = std::make_unique<Timeline>(1.0f, nullptr);
+    // eventManager = std::make_unique<EventManager>(rootTimeline.get());
 }
 
 GameServer::~GameServer() {
@@ -94,10 +96,6 @@ void GameServer::StopServer() {
     std::cout << "GameServer stopped" << std::endl;
 }
 
-void GameServer::HandleClientConnections() {
-    // This is now handled by the message processor and worker threads
-}
-
 void GameServer::BroadcastGameState(const std::string& gameState) {
     if (!isServerRunning || !publisherSocket || gameState.empty()) {
         return;
@@ -107,10 +105,6 @@ void GameServer::BroadcastGameState(const std::string& gameState) {
     memcpy(message.data(), gameState.c_str(), gameState.size());
     publisherSocket->send(message, zmq::send_flags::dontwait);
     
-}
-
-void GameServer::ProcessClientMessages() {
-
 }
 
 void GameServer::AddClient(const std::string& clientId) {
@@ -133,7 +127,7 @@ std::vector<std::string> GameServer::GetConnectedClients() {
     return connectedClients;
 }
 
-void GameServer::SetPlayerEntityFactory(std::function<Entity*(SDL_Renderer*)> factory) {
+void GameServer::SetPlayerSpawnEvent(std::function<Entity*(SDL_Renderer*)> factory) {
     playerEntityFactory = factory;
 }
 
@@ -167,7 +161,7 @@ void GameServer::DespawnPlayerEntity(const std::string& clientId) {
     if (it != clientToEntityMap.end()) {
         Entity* playerEntity = it->second;
         GetEntityManager()->RemoveEntity(playerEntity);
-        delete playerEntity; // Clean up the entity
+        // delete playerEntity; // Clean up the entity
         clientToEntityMap.erase(it);
         std::cout << "Despawned player entity for client: " << clientId << std::endl;
     }
@@ -229,7 +223,10 @@ void GameServer::ProcessMessage(const std::string& message) {
     if (message.find("CONNECT:") == 0) {
         std::string clientId = message.substr(8); // Remove "CONNECT:" prefix
         AddClient(clientId);
-        SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
+        eventManager->Raise(new SpawnEvent(this, clientId));
+    
+        // eventManager->Raise(SpawnEvent())
+        // SpawnPlayerEntity(clientId); // Spawn a player entity for the new client
     }
     else if (message.find("DISCONNECT:") == 0) {
         std::string clientId = message.substr(11); // Remove "DISCONNECT:" prefix
@@ -283,7 +280,7 @@ void GameServer::ProcessClientActions(const std::string& clientId, const std::st
     }
     else {
         for (const auto& actionName : actions) {
-            playerEntity->OnActivity(actionName);
+            eventManager->Raise(new InputEvent(actionName, playerEntity));
         }
     }
 }
@@ -293,7 +290,12 @@ bool GameServer::Initialize(const char* title, int resx, int resy) {
     if (!GameEngine::Initialize("GameServer (Headless)", 320, 240, 1.0f)) {
         return false;
     }
-    
+
+    // Necessary event registrations 
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_INPUT, new InputEventHandler());
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_SPAWN, new SpawnEventHandler());
+    eventManager->RegisterEventHandler(EventType::EVENT_TYPE_COLLISION, new CollisionEventHandler());
+    // GetCollision()->SetEventManager(eventManager.get());
     // Server-specific initialization
     std::cout << "GameServer initialized with headless game engine" << std::endl;
     
@@ -322,11 +324,9 @@ void GameServer::Run() {
             entities = entityMgr->getEntityVectorRef();
         }
         GetRootTimeline()->Update(deltaTime / 1000.0f);
+        eventManager->HandleCurrentEvents();
         // Update the game engine (physics, collisions, etc.)
         Update(deltaTime, entities);
-        
-        // Process client messages (handled by worker threads)
-        HandleClientConnections();
         
         // Check if 10ms have passed since last broadcast
         auto now = std::chrono::steady_clock::now();
@@ -346,6 +346,7 @@ void GameServer::Run() {
 }
 
 void GameServer::Shutdown() {
+
     StopServer();
     // Call base class shutdown
     GameEngine::Shutdown();
