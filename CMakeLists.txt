@@ -61,6 +61,7 @@ set(REQUIRED_SOURCES
   src/Core/JobSystem.cpp
   src/Events/EventSystem.cpp
   src/Replay/ReplaySystem.cpp
+  src/Memory/MemoryPool.cpp
 
 )
 
@@ -87,7 +88,7 @@ set(ENGINE_HEADERS
   src/Math/vec2.h
   src/Events/EventSystem.h
   src/Replay/ReplaySystem.h
-
+  src/Memory/MemoryPool.h
   demo_cs/main.h
 )
 
