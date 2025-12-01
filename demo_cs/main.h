@@ -125,7 +125,7 @@ class TestEntity : public Entity {
     // Get ground reference and grounded state
     Entity* groundRef = getComponent<Entity*>("groundRef");
     bool grounded = getComponent<bool>("grounded");
-    
+    SDL_Log("OnActivity: actionName: %s", actionName.c_str());
     if (actionName == "MOVE_LEFT") {
       // Move left at constant speed, ignoring platform motion
       SetVelocityX(-runSpeed);
@@ -134,10 +134,14 @@ class TestEntity : public Entity {
       // Move right at constant speed, ignoring platform motion
       SetVelocityX(runSpeed);
       setComponent("playerInputDirection", 1);
-    } else if (actionName == "JUMP" && grounded) {
-      SetVelocityY(-1500.0f);
-      setComponent("grounded", false);
-      setComponent("wasGrounded", false);
+    } else if (actionName == "JUMP") {
+      // Only jump if grounded, but don't reset horizontal velocity if not grounded
+      if (grounded) {
+        SetVelocityY(-1500.0f);
+        setComponent("grounded", false);
+        setComponent("wasGrounded", false);
+      }
+      // If not grounded, do nothing - preserve current horizontal velocity
     } else if (actionName == "IDLE") {
       // Stop horizontal movement, inherit platform velocity when grounded
       const float carrierVX = (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;
