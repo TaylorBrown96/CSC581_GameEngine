@@ -2,70 +2,62 @@
 
 #include "Events/EventSystem.h"
 #include "Events/EventTypes.h"
+#include "Events/ReplayEvent.h"
+#include "Entities/Entity.h"
 
-
-typedef enum ReplayEventType {
-    START = EventType::EVENT_TYPE_REPLAY_START,
-    STOP = EventType::EVENT_TYPE_REPLAY_STOP
-} ReplayEventType;
+#include <filesystem>
+#include <fstream>
+#include <mutex>
+#include <queue>
+#include <string>
 
 class ReplayRecorder {
-    EntityManager* entityManager = nullptr;
+  EntityManager *entityManager = nullptr;
+  std::string replayDirectory;
+  std::string recordingFilePath;
+  std::string playbackFilePath;
+  std::string lastCompletedRecordingFilePath;
+  std::ofstream recordingStream;
+  std::ifstream playbackStream;
+  std::queue<std::string> playbackQueue;
+  mutable std::mutex ioMutex;
+
+  std::string GenerateTimestampedFilename() const;
+  bool OpenRecordingStream(const std::string &filePath);
+  bool OpenPlaybackStream(const std::string &filePath);
+  void CloseRecordingStream();
+  void ClosePlaybackStream();
+  void ResetRecordingStateLocked();
+  void ResetPlaybackStateLocked();
+  static std::string EncodeMessage(const std::string &message);
+  static std::string DecodeMessage(const std::string &encodedLine);
+
 public:
-    bool recording = false;
-    bool playing = false;
-    ReplayRecorder(EntityManager* entityManagerRef) : entityManager(entityManagerRef) 
-    {}
+  bool recording = false;
+  bool playing = false;
 
-    void Record() {
-        if (!recording)
-            return;
+  explicit ReplayRecorder(EntityManager *entityManagerRef,
+                          const std::string &defaultDirectory = "Replays");
+  ~ReplayRecorder();
 
-        // RECORDING LOGIC HERE
-        // SDL_Log("Replay is being recorded\n");
-    }
+  bool StartRecording();
+  bool StartRecording(const std::string &filePath);
+  void StopRecording();
 
-    void Play() {
-        if (!playing)
-            return;
-            
-        // MAYBE PLAYING LOGIC HERE?
-    }
-};
+  bool StartPlayback(const std::string &filePath);
+  void StopPlayback();
 
+  void RecordMessage(const std::string &message);
+  bool TryGetNextPlaybackMessage(std::string &outMessage);
 
-typedef struct ReplayEvent : public Event {
-private:
-    ReplayEvent() = default;
-public:
-    static ReplayEvent* Start() {
-        ReplayEvent* rpl = new ReplayEvent();
-        rpl->timestamp = 0.0;
-        rpl->type = ReplayEventType::START;
-        return rpl;
-    }
-    static ReplayEvent* Stop() {
-        ReplayEvent* rpl = new ReplayEvent();
-        rpl->timestamp = 0.0;
-        rpl->type = ReplayEventType::STOP;
-        return rpl;
-    }
-};
+  void Record();
+  void Play();
 
-class ReplayHandler : public EventHandler {
-    ReplayRecorder* rplRecordRef = nullptr;
-public:
-    ReplayHandler(ReplayRecorder* pRplRecordRef) : rplRecordRef(pRplRecordRef) 
-    {}
-
-    void OnEvent(Event* E) override {
-        SDL_Log("Recording Event Launched.\n");
-
-        if (E->type == ReplayEventType::START || E->type == ReplayEventType::STOP) { 
-            rplRecordRef->recording = (E->type == ReplayEventType::START);
-        }
-    }
-    
-    
+  bool IsRecording() const { return recording; }
+  bool IsPlaying() const { return playing; }
+  std::string GetActiveRecordingFile() const;
+  std::string GetActivePlaybackFile() const;
+  std::string GetLastCompletedRecordingFile() const;
+  void SetReplayDirectory(const std::string &directory);
 };
 
