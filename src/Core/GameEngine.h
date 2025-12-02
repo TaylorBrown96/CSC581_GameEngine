@@ -70,4 +70,5 @@ class GameEngine {
 
 private:
   void HandleEvents();
+  void ProcessInputForEntity(Entity* entity, const std::vector<std::string>& actions);
 };
