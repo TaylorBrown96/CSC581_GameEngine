@@ -43,6 +43,10 @@ public:
     void SendMessageToServer(const std::string& message);
     void SendInputToServer();
     std::string GetLastGameState();
+
+    bool StartReplayPlayback(const std::string& filePath);
+    void StopReplayPlayback();
+    bool IsReplayPlaying() const;
     
     // Connection management
     bool IsConnected() const { return isConnected; }
@@ -60,7 +64,19 @@ public:
 
 private:
     void ProcessServerMessages();
+    void HandleIncomingMessage(const std::string& messageStr);
     void ProcessStringEntityData(const std::string& entityData);
     void SyncEntityWithStringData(Entity* entity, float x, float y, float offSetX, float offSetY, float width, float height, 
                                  float velX, float velY, int textureState, int currentFrame, bool visible);
+};
+
+
+class ReplayHandler : public EventHandler {
+  ReplayRecorder *rplRecordRef = nullptr;
+  GameClient* cl = nullptr;
+public:
+  ReplayHandler(ReplayRecorder *pRplRecordRef, GameClient* pcl) : rplRecordRef(pRplRecordRef), cl(pcl) {
+    ReplayEvent::CreateMemPool(1024);
+  }
+  virtual void OnEvent(Event* E) override;
 };

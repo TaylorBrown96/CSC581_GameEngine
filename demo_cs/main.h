@@ -53,79 +53,77 @@ class TestEntity : public Entity {
 
   void Update(float deltaTime, InputManager *input,
               EntityManager *entitySpawner) override {
-    (void)entitySpawner;
-    
-    // Update animation
-    Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
-    int animationDelay = getComponent<int>("animationDelay");
-    lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
-    if (lastFrameTime >= (Uint32)animationDelay) {
-      rendering.currentFrame = (rendering.currentFrame + 1) % rendering.textures[rendering.currentTextureState].num_frames_x;
-      lastFrameTime = 0;
-    }
-    setComponent("lastFrameTime", lastFrameTime);
+      (void)entitySpawner;
 
-    // Reset grounded state each frame (will be set by collision if on platform)
-    setComponent("grounded", false);
-    
-    // Bounce off screen edges (demonstrates entity system working) using window
-    // bounds push opposite direction
-    if (position.x <= 0) {
-      position.x = 0;
-    }
-
-    // Reset if falls off bottom (demonstrates physics working)
-    if (position.y > 1080) { // fell off bottom of screen
-      position.x = 100;
-      position.y = 100;
-      SetVelocityY(0.0f);
-      setComponent("grounded", false);
-      setComponent("groundRef", static_cast<Entity*>(nullptr));
-    }
-
-    // Handle pause toggle (only on key press, not while held)
-    static bool pKeyWasPressed = false;
-    bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
-    
-    if (pKeyIsPressed && !pKeyWasPressed) {
-      // Key was just pressed (not held)
-      if (timeline->getState() == Timeline::State::PAUSE) {
-        timeline->setState(Timeline::State::RUN);
-      } else {
-        timeline->setState(Timeline::State::PAUSE);
+      Uint32 lastFrameTime = getComponent<Uint32>("lastFrameTime");
+      int animationDelay = getComponent<int>("animationDelay");
+      lastFrameTime += (Uint32)(deltaTime * 1000);  // Convert to milliseconds
+      if (lastFrameTime >= (Uint32)animationDelay) {
+        rendering.currentFrame =
+            (rendering.currentFrame + 1) %
+            rendering.textures[rendering.currentTextureState].num_frames_x;
+        lastFrameTime = 0;
       }
-    }
-    pKeyWasPressed = pKeyIsPressed;
+      setComponent("lastFrameTime", lastFrameTime);
 
-    // Speed up and slow down the timeline for this entity
-    static bool iKeyWasPressed = false;
-    static bool oKeyWasPressed = false;
-    static bool uKeyWasPressed = false;
-    bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
-    bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
-    bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
-    if (iKeyIsPressed && !iKeyWasPressed) {
-      timeline->setScale(timeline->getScale() - 0.5f);
-    }
-    if (oKeyIsPressed && !oKeyWasPressed) {
-      timeline->setScale(timeline->getScale() + 0.5f);
-    }
-    if (uKeyIsPressed && !uKeyWasPressed) {
-      timeline->setScale(0.5f);
-    }
-    iKeyWasPressed = iKeyIsPressed;
-    oKeyWasPressed = oKeyIsPressed;
-    uKeyWasPressed = uKeyIsPressed;
+      setComponent("grounded", false);
+
+      if (position.x <= 0) {
+        position.x = 0;
+      }
+
+      if (position.y > 1080) {
+        position.x = 100;
+        position.y = 100;
+        SetVelocityY(0.0f);
+        setComponent("grounded", false);
+        setComponent("groundRef", static_cast<Entity*>(nullptr));
+      }
+
+      static bool pKeyWasPressed = false;
+      bool pKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_P);
+
+      if (pKeyIsPressed && !pKeyWasPressed) {
+        if (timeline->getState() == Timeline::State::PAUSE) {
+          timeline->setState(Timeline::State::RUN);
+        } else {
+          timeline->setState(Timeline::State::PAUSE);
+        }
+      }
+      pKeyWasPressed = pKeyIsPressed;
+
+      static bool iKeyWasPressed = false;
+      static bool oKeyWasPressed = false;
+      static bool uKeyWasPressed = false;
+
+      bool iKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_I);
+      bool oKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_O);
+      bool uKeyIsPressed = input->IsKeyPressed(SDL_SCANCODE_U);
+
+      if (iKeyIsPressed && !iKeyWasPressed) {
+        timeline->setScale(timeline->getScale() - 0.5f);
+      }
+      if (oKeyIsPressed && !oKeyWasPressed) {
+        timeline->setScale(timeline->getScale() + 0.5f);
+      }
+      if (uKeyIsPressed && !uKeyWasPressed) {
+        timeline->setScale(0.5f);
+      }
+
+      iKeyWasPressed = iKeyIsPressed;
+      oKeyWasPressed = oKeyIsPressed;
+      uKeyWasPressed = uKeyIsPressed;
   }
 
   void OnActivity(const std::string& actionName) override {
     // speeds
     constexpr float runSpeed = 200.0f;
+    constexpr float dashSpeed = 900.0f;
     
     // Get ground reference and grounded state
     Entity* groundRef = getComponent<Entity*>("groundRef");
     bool grounded = getComponent<bool>("grounded");
-    
+    SDL_Log("OnActivity: actionName: %s", actionName.c_str());
     if (actionName == "MOVE_LEFT") {
       // Move left at constant speed, ignoring platform motion
       SetVelocityX(-runSpeed);
@@ -134,10 +132,22 @@ class TestEntity : public Entity {
       // Move right at constant speed, ignoring platform motion
       SetVelocityX(runSpeed);
       setComponent("playerInputDirection", 1);
-    } else if (actionName == "JUMP" && grounded) {
-      SetVelocityY(-1500.0f);
-      setComponent("grounded", false);
-      setComponent("wasGrounded", false);
+    } else if (actionName == "DASH_LEFT") {
+      // Dash left (chord: Shift + A)
+      SetVelocityX(-dashSpeed);
+      setComponent("playerInputDirection", -1);
+    } else if (actionName == "DASH_RIGHT") {
+      // Dash right (chord: Shift + D)
+      SetVelocityX(dashSpeed);
+      setComponent("playerInputDirection", 1);
+    } else if (actionName == "JUMP") {
+      // Only jump if grounded, but don't reset horizontal velocity if not grounded
+      if (grounded) {
+        SetVelocityY(-1500.0f);
+        setComponent("grounded", false);
+        setComponent("wasGrounded", false);
+      }
+      // If not grounded, do nothing - preserve current horizontal velocity
     } else if (actionName == "IDLE") {
       // Stop horizontal movement, inherit platform velocity when grounded
       const float carrierVX = (grounded && groundRef) ? groundRef->GetVelocityX() : 0.0f;

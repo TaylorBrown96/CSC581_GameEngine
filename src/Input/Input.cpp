@@ -1,99 +1,121 @@
 #include "Input.h"
 #include <algorithm>
 
-// SDL3: SDL_GetKeyboardState returns const bool*
-// keyboardState points to SDL's internal array for the *current* frame.
-InputManager::InputManager() : keyboardState(nullptr) {
-}
+InputManager::InputManager() : keyboardState(nullptr) {}
 
 void InputManager::Update() {
-  // Fetch the current keyboard state first
-  int numKeys = 0;
-  const bool *state = SDL_GetKeyboardState(&numKeys);
+    int numKeys = 0;
+    const bool* state = SDL_GetKeyboardState(&numKeys);
 
-  // Snapshot "previous" for any keys we've tracked so far
-  // (Don't clear the map; we overwrite values for tracked scancodes.)
-  for (auto &kv : previousKeyState) {
-    kv.second = state[kv.first];
-  }
+    Uint32 now = SDL_GetTicks();
 
-  // Now make this frame's state available
-  keyboardState = state;
+    // Detect "just pressed" edges for keys we have in previousKeyState
+    for (int sc = 0; sc < numKeys; sc++) {
+        bool current = state[sc];
+        bool prev = false;
+
+        auto it = previousKeyState.find((SDL_Scancode)sc);
+        if (it != previousKeyState.end()) {
+            prev = it->second;
+        }
+
+        // Update previousKeyState for next frame
+        previousKeyState[(SDL_Scancode)sc] = current;
+    }
+
+    keyboardState = state;
 }
 
 bool InputManager::IsKeyPressed(SDL_Scancode scancode) const {
-  return keyboardState && keyboardState[scancode];
+    return keyboardState && keyboardState[scancode];
 }
 
 bool InputManager::IsKeyJustPressed(SDL_Scancode scancode) const {
-  if (!keyboardState) return false;
+    if (!keyboardState) return false;
 
-  const bool current = keyboardState[scancode];
-  const auto it = previousKeyState.find(scancode);
-  const bool prev = (it != previousKeyState.end()) ? it->second : false;
+    bool current = keyboardState[scancode];
+    bool prev = false;
 
-  // Prepare for next frame: remember what we saw this frame
-  const_cast<InputManager *>(this)->previousKeyState[scancode] = current;
+    auto it = previousKeyState.find(scancode);
+    if (it != previousKeyState.end()) prev = it->second;
 
-  return current && !prev;
+    const_cast<InputManager*>(this)->previousKeyState[scancode] = current;
+    return current && !prev;
 }
 
 bool InputManager::IsKeyJustReleased(SDL_Scancode scancode) const {
-  if (!keyboardState) return false;
+    if (!keyboardState) return false;
 
-  const bool current = keyboardState[scancode];
-  const auto it = previousKeyState.find(scancode);
-  const bool prev = (it != previousKeyState.end()) ? it->second : false;
+    bool current = keyboardState[scancode];
+    bool prev = false;
 
-  // Prepare for next frame
-  const_cast<InputManager *>(this)->previousKeyState[scancode] = current;
+    auto it = previousKeyState.find(scancode);
+    if (it != previousKeyState.end()) prev = it->second;
 
-  return !current && prev;
+    const_cast<InputManager*>(this)->previousKeyState[scancode] = current;
+    return !current && prev;
 }
 
-// Action mapping methods
+// Action mapping
 void InputManager::AddAction(const std::string& actionName, SDL_Scancode key) {
-    // Add to action-to-keys mapping
-    actionToKeys[actionName].push_back(key);
-    
-    // Add to key-to-action mapping
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = false;
+    trigger.keys.clear();
+    trigger.keys.push_back(key);
     keyToAction[key] = actionName;
 }
 
 void InputManager::AddAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys) {
-    // Add all keys for this action
-    for (const auto& key : keys) {
-        AddAction(actionName, key);
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = false;  // Multiple keys as alternatives (OR logic)
+    trigger.keys = keys;
+    for (auto& key : keys) {
+        keyToAction[key] = actionName;
     }
+}
+
+void InputManager::AddChordAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys) {
+    ActionTrigger& trigger = actionToKeys[actionName];
+    trigger.isKeyChord = true;  // All keys must be pressed simultaneously (AND logic)
+    trigger.keys = keys;
+    // Don't add to keyToAction for chords since individual keys shouldn't trigger the action
 }
 
 bool InputManager::IsActionActive(const std::string& actionName) const {
     if (!keyboardState) return false;
-    
+
     auto it = actionToKeys.find(actionName);
     if (it == actionToKeys.end()) return false;
     
-    // Check if any of the keys for this action are pressed
-    for (const auto& key : it->second) {
-        if (keyboardState[key]) {
-            return true;
-        }
-    }
+    const ActionTrigger& trigger = it->second;
     
-    return false;
+    // If it's a chord, all keys must be pressed (AND logic)
+    if (trigger.isKeyChord) {
+        for (auto key : trigger.keys) {
+            if (!keyboardState[key]) {
+                return false;
+            }
+        }
+        return true;
+    } else {
+        // If it's not a chord, any key can trigger it (OR logic)
+        for (auto key : trigger.keys) {
+            if (keyboardState[key]) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 std::vector<std::string> InputManager::GetActiveActions() const {
     std::vector<std::string> activeActions;
-    
     if (!keyboardState) return activeActions;
-    
-    for (const auto& actionPair : actionToKeys) {
-        const std::string& actionName = actionPair.first;
-        if (IsActionActive(actionName)) {
-            activeActions.push_back(actionName);
+
+    for (auto& action : actionToKeys) {
+        if (IsActionActive(action.first)) {
+            activeActions.push_back(action.first);
         }
     }
-    
     return activeActions;
 }

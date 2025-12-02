@@ -12,36 +12,37 @@
  * action mapping. Actions are semantic names that can be mapped to multiple keys,
  * making it easier to handle different input configurations and send clean
  * action data to the server.
- * 
- * Example usage:
- *   inputManager->AddAction("MOVE_UP", SDL_SCANCODE_W);
- *   bool isMoving = inputManager->IsActionActive("MOVE_UP");
- *   auto actions = inputManager->GetActiveActions();
  */
+
+typedef struct ActionTrigger {
+  bool isKeyChord;
+  std::vector<SDL_Scancode> keys;
+} ActionTrigger;
+
 class InputManager {
  private:
-  const bool *keyboardState;  // SDL3 returns const bool*, not const Uint8*
+  const bool *keyboardState;
   std::unordered_map<SDL_Scancode, bool> previousKeyState;
-  
+
   // Action mapping functionality
-  std::unordered_map<std::string, std::vector<SDL_Scancode>> actionToKeys;
+  std::unordered_map<std::string, ActionTrigger> actionToKeys;
   std::unordered_map<SDL_Scancode, std::string> keyToAction;
 
  public:
   InputManager();
   void Update();
 
-  // Raw keyboard input methods
+  // Raw keyboard input
   bool IsKeyPressed(SDL_Scancode scancode) const;
   bool IsKeyJustPressed(SDL_Scancode scancode) const;
   bool IsKeyJustReleased(SDL_Scancode scancode) const;
-  
-  // Action mapping methods
+
+  // Action mapping
   void AddAction(const std::string& actionName, SDL_Scancode key);
   void AddAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys);
+  void AddChordAction(const std::string& actionName, const std::vector<SDL_Scancode>& keys);
   bool IsActionActive(const std::string& actionName) const;
   std::vector<std::string> GetActiveActions() const;
-  
-  // Setup default actions
+
   void SetupDefaultActions();
 };

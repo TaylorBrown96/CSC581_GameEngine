@@ -88,21 +88,29 @@ public:
     }
 
     void HandleCurrentEvents() {
-        std::lock_guard<std::mutex> lock(eventsMutex);
+        
         float currentTimestamp = timeline->getElapsedTime();
+        
 
         while (!events.empty() && events.top()->timestamp <= currentTimestamp) {
-            Event* e = events.top();
-            events.pop();
+            Event* e = nullptr;
+        
+            {
+                std::lock_guard<std::mutex> lock(eventsMutex); 
+                e = events.top();
+                events.pop();
+            } 
             
-            // handle the event
-            std::vector<EventHandler*> evHandlers = EventHandlers[e->type];
-            for (int i = 0; i < evHandlers.size(); i++) {
-                evHandlers[i]->OnEvent(e);
-            }   
+            if (e) {
+                // handle the event
+                std::vector<EventHandler*> evHandlers = EventHandlers[e->type];
+                for (int i = 0; i < evHandlers.size(); i++) {
+                    evHandlers[i]->OnEvent(e);
+                }   
 
-            // Clean up the event after handling
-            delete e;
+                // Clean up the event after handling
+                delete e;
+            }
         }
     }
 };
